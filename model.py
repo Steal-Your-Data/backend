@@ -1,4 +1,4 @@
-from app import db
+from extentions import db
 from flask_login import UserMixin
 
 # User Model
@@ -15,8 +15,8 @@ class Friendship(db.Model):
     friend_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     status = db.Column(db.String(20), default='pending')  # pending, accepted
 
-# Movie Model (Pre-populated database)
 class Movie(db.Model):
+    __tablename__ = 'movies'  # Ensure the table name matches your CSV import
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     genres = db.Column(db.String(100))
@@ -25,6 +25,7 @@ class Movie(db.Model):
     popularity = db.Column(db.Float)
     release_date = db.Column(db.Date)
     poster_path = db.Column(db.String(200))
+
 
 # Session Model for movie sessions
 class Session(db.Model):

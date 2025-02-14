@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from model import Movie
-from app import db
-
+from extentions import db
 movie_bp = Blueprint('movies', __name__)
 
 
