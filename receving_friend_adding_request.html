@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Friend Request Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>Friend Request Notifications</h1>
+    <p id="notification">Waiting for notifications...</p>
+
+    <script>
+        // Connect to the WebSocket server (Flask-SocketIO)
+        const socket = io("http://localhost:5000", {
+            query: { user_id: "2" }, // Simulating user 2
+            transports: ["websocket"]
+        });
+
+        socket.on("connect", () => {
+            console.log("Connected to WebSocket server as user 2");
+        });
+
+        // Listen for friend request notifications
+        socket.on("friend_request", (data) => {
+            console.log("Received friend request from:", data.from_username);
+            document.getElementById("notification").innerText = `There is a friend request from ${data.from_username}`;
+        });
+
+        socket.on("disconnect", () => {
+            console.log("Disconnected from server");
+        });
+    </script>
+</body>
+</html>
+
