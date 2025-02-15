@@ -13,8 +13,7 @@ This is the final project for CS506. The app allows friends to form a group and 
 ## Setup Instructions
 1. Clone the repository:
    ```sh
-   git clone <repo-url>
-   cd <repo-directory>
+   git clone https://github.com/Steal-Your-Data/backend.git
    ```
 2. Create and activate a Conda environment (optional but recommended):
    ```sh
