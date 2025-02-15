@@ -57,11 +57,7 @@ def create_app():
     return app
 
 
-
-
-
-
-
+import socket_events
 
 if __name__ == "__main__":
     app = create_app()

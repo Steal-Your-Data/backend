@@ -43,7 +43,7 @@ def respond_friend_request():
     action = data.get('action')  # "accept" or "reject"
 
     friend_request = Friendship.query.get(request_id)
-    if not friend_request or friend_request.friend_id != user_id:
+    if not friend_request or friend_request.friend_id != int(user_id):
         return jsonify({'message': 'Friend request not found'}), 404
 
     if action == "accept":
