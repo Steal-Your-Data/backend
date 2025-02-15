@@ -28,7 +28,11 @@ def send_friend_request():
 
     sender = User.query.get(user_id)
     socketio.emit('friend_request',
-                  {'from_user_id': user_id, 'from_username': sender.username},
+                  {
+                   'request_id': new_request.id, # Unique transaction ID
+                   'from_user_id': user_id,
+                   'from_username': sender.username
+                  },
                   room=f'notif_{friend.id}')
     return jsonify({'message': 'Friend request sent'})
 

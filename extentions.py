@@ -17,9 +17,6 @@ def expired_token_callback(jwt_header, jwt_payload):
     }), 401
 
 # Blocklist Check: Deny any blacklisted token
-
-
-
 db = SQLAlchemy()
 login_manager = LoginManager()
 jwt = JWTManager()
