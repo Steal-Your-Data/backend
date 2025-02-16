@@ -4,9 +4,11 @@ from flask import Flask
 from extentions import db, login_manager, jwt, socketio
 from datetime import timedelta
 from flask import jsonify
+from flask_cors import CORS
 
 def create_app():
     app = Flask(__name__)
+    CORS(app)
 
     # Configuration
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/terry/Desktop/CS506/movies.db'
