@@ -79,7 +79,7 @@ def friend_list():
 
     friends = []
     for f in friendships:
-        friend_id = f.friend_id if f.user_id == user_id else f.user_id
+        friend_id = f.friend_id if f.user_id == int(user_id) else int(f.user_id)
         friend = User.query.get(friend_id)
         friends.append({'user_id': friend.id, 'username': friend.username, 'email': friend.email})
     return jsonify(friends)
