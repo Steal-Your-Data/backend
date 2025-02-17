@@ -23,7 +23,8 @@ def handle_disconnect():
 @socketio.on('join_session_room')
 def handle_join_session_room(data):
     session_id = data.get("session_id")
-    user_id = request.args.get("user_id")  # from the socket connection
+    # user_id = request.args.get("user_id")  # from the socket connection
+    user_id = data.get("user_id")
     if session_id and user_id:
         join_room(f"session_{session_id}")
         print(f"User {user_id} joined session room session_{session_id}")

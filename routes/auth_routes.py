@@ -45,13 +45,6 @@ def login():
     return jsonify({'access_token': access_token, 'user_id': user.id, 'username': user.username,'expires_in': 60 * 60 * 24})
 
 
-# User Logout
-# @auth_bp.route('/logout', methods=['POST'])
-# @jwt_required()
-# def logout():
-#     logout_user()
-#     return jsonify({'message': 'Logged out successfully'}), 200
-
 
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()
