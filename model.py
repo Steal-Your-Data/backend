@@ -40,16 +40,19 @@ class Session(db.Model):
 class SessionParticipant(db.Model):
     __tablename__ = 'session_participant'
     id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.Integer, db.ForeignKey('session.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    movie_id = db.Column(db.Integer, nullable=True)  # The movie the participant picks (optional)
+    session_id = db.Column(db.Integer, db.ForeignKey('session.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    confirmed = db.Column(db.Boolean, default=False)  # NEW COLUMN for session confirmation
+    done_selecting = db.Column(db.Boolean, default=False)  # For movie selection phase
+    done_voting = db.Column(db.Boolean, default=False)  # For voting phase
+
 
 # Temporary Pocket for Movie Voting
 class MoviePocket(db.Model):
     __tablename__ = 'movie_pocket'
     id = db.Column(db.Integer, primary_key=True)
     session_id = db.Column(db.Integer, db.ForeignKey('session.id'))
-    movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'))
+    movie_id = db.Column(db.Integer, db.ForeignKey('movies.id'))
     votes = db.Column(db.Integer, default=0)
 
 class RevokedToken(db.Model):

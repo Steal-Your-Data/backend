@@ -8,7 +8,8 @@ def handle_connect():
     if user_id:
         join_room(f'notif_{user_id}')  # User joins their personal notification room
         print(f"User {user_id} connected and joined room notif_{user_id}")
-
+    else:
+        print("No user_id provided in query parameters")
         # # Add user to any session they are part of
         # active_sessions = SessionParticipant.query.filter_by(user_id=user_id).all()
         # for session in active_sessions:

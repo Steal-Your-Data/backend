@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Friend Management</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .box { border: 1px solid #ccc; padding: 15px; width: 350px; margin-bottom: 10px; }
+    .log-box { border: 1px solid #ccc; background: #f9f9f9; padding: 10px; height: 150px; overflow-y: auto; margin-top: 10px; }
+    .button { padding: 10px; margin-top: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h2>Friend Management</h2>
+
+  <!-- Login Box -->
+  <div class="box" id="login-box">
+    <h3>Login</h3>
+    <label>Email:</label>
+    <input type="email" id="email" placeholder="Enter your email"><br>
+    <label>Password:</label>
+    <input type="password" id="password" placeholder="Enter your password"><br>
+    <button class="button" onclick="login()">Login</button>
+  </div>
+
+  <!-- Friend Request Box (Hidden until login) -->
+  <div class="box" id="friend-box" style="display: none;">
+    <h3>Add a Friend</h3>
+    <label>Friend's Email:</label>
+    <input type="email" id="friend_email" placeholder="Enter friend's email"><br>
+    <button class="button" onclick="sendFriendRequest()">Send Request</button>
+  </div>
+
+  <!-- Incoming Requests Box (Hidden until a request is received) -->
+  <div class="box" id="request-box" style="display: none;">
+    <h3>Incoming Friend Request</h3>
+    <p id="request-message"></p>
+    <button class="button" onclick="respondToRequest('accept')">Accept</button>
+    <button class="button" onclick="respondToRequest('reject')">Reject</button>
+  </div>
+
+  <!-- Log Box -->
+  <h3>Log</h3>
+  <div class="log-box" id="log-box"></div>
+
+  <script>
+    const backendUrl = "http://localhost:5000";  // Adjust if needed
+    let socket;          // Socket.IO connection
+    let jwtToken = "";   // Stored JWT token after login
+    let userId = "";     // User ID returned on login
+    let pendingRequestId = null; // To store incoming friend request ID
+
+    // Helper function to log messages
+    function logMessage(message, type = "info") {
+      const logBox = document.getElementById("log-box");
+      const msgElem = document.createElement("div");
+      msgElem.textContent = `[${type.toUpperCase()}] ${message}`;
+      logBox.appendChild(msgElem);
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // Login function: Calls /auth/login and stores JWT and userId, then connects to Socket.IO.
+    function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      if (!email || !password) {
+        logMessage("Enter both email and password", "error");
+        return;
+      }
+
+      fetch(`${backendUrl}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: password })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.access_token) {
+          jwtToken = `Bearer ${data.access_token}`;
+          userId = data.user_id;
+
+          logMessage(`Logged in as ${data.username}`, "system");
+          document.getElementById("login-box").style.display = "none";
+          document.getElementById("friend-box").style.display = "block";
+
+          connectSocket(userId);  // Connect to Socket.IO with user ID
+        } else {
+          logMessage("Login failed: " + data.message, "error");
+        }
+      })
+      .catch(error => logMessage("Error: " + error, "error"));
+    }
+
+    // Connects to Socket.IO using the given userId as a query parameter
+    function connectSocket(userId) {
+      if (socket) {
+        socket.disconnect();
+      }
+      
+      console.log(`Attempting to connect with user_id: ${userId}`);
+      
+      socket = io("http://localhost:5000", {
+        query: { user_id: userId },
+        transports: ["websocket"]  // Force WebSocket transport
+      });
+      
+      socket.on("connect", () => {
+        console.log(`Successfully connected as User ${userId}`);
+        logMessage(`Connected to notifications as User ${userId}`, "system");
+      });
+      
+      socket.on("friend_request", (data) => {
+        pendingRequestId = data.request_id;
+        document.getElementById("request-box").style.display = "block";
+        document.getElementById("request-message").innerText = `New friend request from ${data.from_username}`;
+        logMessage(`New friend request from ${data.from_username}`, "system");
+      });
+      
+      socket.on("friend_request_accepted", (data) => {
+        logMessage(`Your friend request was accepted by ${data.from_username}`, "system");
+      });
+      
+      socket.on("disconnect", () => {
+        console.log("Socket disconnected");
+        logMessage("Disconnected from notifications", "error");
+      });
+    }
+
+    // Sends a friend request to the email provided in the friend_email input
+    function sendFriendRequest() {
+      const friendEmail = document.getElementById("friend_email").value.trim();
+
+      if (!jwtToken || !friendEmail) {
+        logMessage("Enter a friend's email", "error");
+        return;
+      }
+
+      fetch(`${backendUrl}/user/send_friend_request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": jwtToken
+        },
+        body: JSON.stringify({ email: friendEmail })
+      })
+      .then(response => response.json())
+      .then(data => logMessage(data.message, "system"))
+      .catch(error => logMessage("Error: " + error, "error"));
+    }
+
+    // Responds to an incoming friend request (accept or reject)
+    function respondToRequest(action) {
+      if (!jwtToken || !pendingRequestId) {
+        logMessage("No request to respond to", "error");
+        return;
+      }
+
+      fetch(`${backendUrl}/user/respond_friend_request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": jwtToken
+        },
+        body: JSON.stringify({ request_id: pendingRequestId, action: action })
+      })
+      .then(response => response.json())
+      .then(data => {
+        logMessage(data.message, "system");
+        document.getElementById("request-box").style.display = "none";
+        pendingRequestId = null;
+      })
+      .catch(error => logMessage("Error: " + error, "error"));
+    }
+  </script>
+</body>
+</html>
