@@ -23,10 +23,8 @@ class Friendship(db.Model):
     friend_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     status = db.Column(db.String(20), default='pending')  # pending, accepted
 
-
-
 '''
----------------------------------------------------------------------------
+----------------------------------------------------------------------------
 If V2, This is useless
 '''
 
@@ -84,6 +82,11 @@ class MoviePocket(db.Model):
     movie_id = db.Column(db.Integer, db.ForeignKey('movies.id'))
     votes = db.Column(db.Integer, default=0)
 
+
+'''
+---------------------------------------------------------------------------
+If V2, This is useless
+'''
 class RevokedToken(db.Model):
     __tablename__ = 'revoked_tokens'  # Define table name
     id = db.Column(db.Integer, primary_key=True)  # Auto-increment ID
@@ -101,3 +104,8 @@ class RevokedToken(db.Model):
     def is_token_blacklisted(cls, jti):
         """ Check if a token is in the blacklist """
         return db.session.query(cls).filter_by(jti=jti).first() is not None
+
+'''
+----------------------------------------------------------------------------
+If V2, This is useless
+'''
