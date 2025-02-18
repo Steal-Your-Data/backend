@@ -38,7 +38,8 @@ class Session(db.Model):
 
 
 '''
-If V2, modify session_participant, since we do not have user_id, we probably just use name for user_id part
+If V2, modify session_participant, since we do not have 
+user_id, we probably just use name for user_id part
 '''
 
 # Participants in a Session
