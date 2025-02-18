@@ -12,6 +12,9 @@ auth_bp = Blueprint('auth', __name__)
 
 # invalidated_tokens = set()
 
+'''if V2, no need for this'''
+
+
 # Register New User
 @auth_bp.route('/register', methods=['POST'])
 def register():

@@ -1,5 +1,5 @@
 from flask import request
-from flask_socketio import join_room
+from flask_socketio import join_room,leave_room
 from extentions import socketio  # Import the initialized socketio instance
 from model import SessionParticipant,User
 @socketio.on('connect')
@@ -32,5 +32,22 @@ def handle_join_session_room(data):
         user = User.query.get(user_id)
         name = user.username if user else "Unknown"
         socketio.emit("user_joined",
+                      {"session_id": session_id, "user_id": user_id, "name": name},
+                      room=f"session_{session_id}")
+
+
+@socketio.on('leave_session_room')
+def handle_leave_session_room(data):
+    session_id = data.get("session_id")
+    user_id = data.get("user_id")
+
+    if session_id and user_id:
+        leave_room(f"session_{session_id}")
+        print(f"User {user_id} left session room session_{session_id}")
+
+        # Broadcast that the user left the session room
+        user = User.query.get(user_id)
+        name = user.username if user else "Unknown"
+        socketio.emit("user_left",
                       {"session_id": session_id, "user_id": user_id, "name": name},
                       room=f"session_{session_id}")

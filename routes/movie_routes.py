@@ -26,4 +26,14 @@ def search_movies():
     return jsonify(result)
 
 
-# add function & retrieve specific movies, just the title
+'''add function & retrieve specific movies, just the title you can leave other blanks'''
+
+'''
+@movie_bp.route('/search', methods=['GET'])
+def add_movies():
+
+
+
+
+
+'''

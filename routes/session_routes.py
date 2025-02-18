@@ -44,6 +44,15 @@ def start_session():
     return jsonify({'message': 'Session started', 'session_id': new_session.id})
 
 
+
+
+'''
+V2 need another def start_session() without jwt authentification and socketio.emit()
+def start_session_V2() here 
+
+'''
+
+
 # Respond to a Session Invitation (Accept or Reject)
 @session_bp.route('/respond_invite', methods=['POST'])
 @jwt_required()
@@ -96,6 +105,40 @@ def respond_invite():
     else:
         return jsonify({'message': 'Invalid action'}), 400
 
+
+'''
+V2 need a function Join_Room() which use session.ID to join the room and use socket handler 
+@socketio.on('join_session_room')
+def handle_join_session_room(data) call it in the front-end to send the join info and host person catch that info
+'''
+
+'''
+V1 and V2 also need a function to start selection movies, in this function, function will be called by
+the Host, it will delete those who are on the pending list who still not confirmed, and then broadcast that 
+the now we start the game, In this case, for V1, the respond_invite() function only need to broadcast who join
+the session, no other message will be broadcast to other users.
+'''
+
+
+
+'''
+if use V2, the following function will not need jwt 
+token auth probably change the user_id to name since we do not have user
+
+Foe example
+@session_bp.route('/add_movie', methods=['POST'])
+@jwt_required()
+def add_movie():
+    data = request.json
+    session_id = data.get('session_id')
+    movie_id = data.get('movie_id')
+    movie_pocket = MoviePocket(session_id=session_id, movie_id=movie_id)
+    db.session.add(movie_pocket)
+    db.session.commit()
+    socketio.emit('movie_added',
+        {'session_id': session_id, 'movie_id': movie_id}, room=f'session_{session_id}')
+    return jsonify({'message': 'Movie added to pocket'})
+'''
 
 # Add a Movie to the Session Pocket
 @session_bp.route('/add_movie', methods=['POST'])

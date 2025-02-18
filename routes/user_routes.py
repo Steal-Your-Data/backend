@@ -5,6 +5,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 
 user_bp = Blueprint('user', __name__)
 
+'''if v2 no need for this'''
 
 # Send a Friend Request
 @user_bp.route('/send_friend_request', methods=['POST'])
