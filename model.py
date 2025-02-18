@@ -36,6 +36,11 @@ class Session(db.Model):
     host_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # Who started the session
     status = db.Column(db.String(20), default='pending')  # pending, active, completed
 
+
+'''
+If V2, modify session_participant, since we do not have user_id, we probably just use name for user_id part
+'''
+
 # Participants in a Session
 class SessionParticipant(db.Model):
     __tablename__ = 'session_participant'
