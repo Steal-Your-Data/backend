@@ -24,3 +24,6 @@ def search_movies():
             'poster_path': movie.poster_path
         })
     return jsonify(result)
+
+
+# add function & retrieve specific movies, just the title
