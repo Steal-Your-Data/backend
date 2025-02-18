@@ -47,8 +47,26 @@ def start_session():
 
 
 '''
-V2 need another def start_session() without jwt authentification and socketio.emit()
-def start_session_V2() here 
+
+V2 need another def start_session() without jwt authentification and socketio.emit() and no invite
+@session_bp.route('/start_V2', methods=['POST'])
+def start_session_V2():
+    data = request.json
+    invited_friends = data.get('friends', [])  # List of friend IDs
+    name = data.get('name')
+
+    new_session = Session(host_id=user_id, status='pending')
+    db.session.add(new_session)
+    db.session.commit()
+
+    # Add host as participant
+    host_participant = SessionParticipant(session_id=new_session.id, participant_name = name)
+    host_participant.confirmed = True
+    db.session.add(host_participant)
+
+    db.session.commit()
+
+    return jsonify({'message': 'Session started', 'session_id': new_session.id})
 
 '''
 
@@ -125,7 +143,7 @@ the session, no other message will be broadcast to other users.
 if use V2, the following function will not need jwt 
 token auth probably change the user_id to name since we do not have user
 
-pseudo-code modif
+pseudo-code modification
 Foe example
 @session_bp.route('/add_movie', methods=['POST'])
 @jwt_required()
