@@ -2,6 +2,12 @@ from flask import request
 from flask_socketio import join_room,leave_room
 from extentions import socketio  # Import the initialized socketio instance
 from model import SessionParticipant,User
+
+
+'''
+-----------------------------------------------------------------------------
+if V2, this is useless
+'''
 @socketio.on('connect')
 def handle_connect():
     user_id = request.args.get("user_id")  # Extract user ID from query params
@@ -19,6 +25,12 @@ def handle_connect():
 @socketio.on('disconnect')
 def handle_disconnect():
     print("User disconnected")
+'''
+-----------------------------------------------------------------------------
+if V2, this is useless
+'''
+
+
 
 @socketio.on('join_session_room')
 def handle_join_session_room(data):
