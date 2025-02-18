@@ -1,6 +1,12 @@
 from extentions import db
 from flask_login import UserMixin
 
+
+
+'''
+---------------------------------------------------------------------------
+If V2, This is useless
+'''
 # User Model
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
@@ -16,6 +22,14 @@ class Friendship(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     friend_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     status = db.Column(db.String(20), default='pending')  # pending, accepted
+
+
+
+'''
+---------------------------------------------------------------------------
+If V2, This is useless
+'''
+
 
 class Movie(db.Model):
     __tablename__ = 'movies'  # Ensure the table name matches your CSV import
@@ -38,6 +52,7 @@ class Session(db.Model):
 
 
 '''
+------------------------------------------------------------------------------------
 If V2, modify session_participant, since we do not have 
 user_id, we probably just use name for user_id part
 '''
@@ -51,6 +66,14 @@ class SessionParticipant(db.Model):
     confirmed = db.Column(db.Boolean, default=False)  # NEW COLUMN for session confirmation
     done_selecting = db.Column(db.Boolean, default=False)  # For movie selection phase
     done_voting = db.Column(db.Boolean, default=False)  # For voting phase
+
+
+'''
+------------------------------------------------------------------------------------
+If V2, modify session_participant, since we do not have 
+user_id, we probably just use name for user_id part
+'''
+
 
 
 # Temporary Pocket for Movie Voting
