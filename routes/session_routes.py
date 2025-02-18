@@ -125,6 +125,7 @@ the session, no other message will be broadcast to other users.
 if use V2, the following function will not need jwt 
 token auth probably change the user_id to name since we do not have user
 
+pseudo-code modif
 Foe example
 @session_bp.route('/add_movie', methods=['POST'])
 @jwt_required()
