@@ -1,7 +1,7 @@
 # Movie Swipe App
 
 ## Introduction
-This is the final project for CS506. The app allows friends to form a group and use a Tinder-like swiping mechanism to vote for which movie to watch together. The goal is to make movie selection fun, interactive, and democratic among friends. ~~movies.db being used is put in the **google drive CS506** (`Project/Setup tables in Database/movies.db`)~~, ~~also since the **session_route_html_test is too large to push**, put in CS506 (`Project/session_route_html_test`)~~ , a new compiled version of all the html functionalities for testing use the name is called (`complete_version_html_testing.html`), a new structured database will be in **google drive CS506** () (`Project/Setup tables in Database/movies_v2.db`)
+This is the final project for CS506. The app allows friends to form a group and use a Tinder-like swiping mechanism to vote for which movie to watch together. The goal is to make movie selection fun, interactive, and democratic among friends. ~~movies.db being used is put in the **google drive CS506** (`Project/Setup tables in Database/movies.db`)~~, ~~also since the **session_route_html_test is too large to push**, put in CS506 (`Project/session_route_html_test`)~~ , a new compiled version of all the html functionalities for testing use the name is called (`complete_version_html_testing.html`), a new structured database will be in **google drive CS506** (`Project/Setup tables in Database/movies_v2.db`)
 
 ## Version Control
 - Python Version: Conda 3.10.0
