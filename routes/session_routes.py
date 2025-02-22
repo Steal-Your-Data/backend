@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from extentions import db, socketio
-from model import Session, SessionParticipant, MoviePocket, User
+from model import Session, SessionParticipant, MoviePocket
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 session_bp = Blueprint('session', __name__)
@@ -8,172 +8,78 @@ session_bp = Blueprint('session', __name__)
 
 # Start a New Session and Invite Friends
 @session_bp.route('/start', methods=['POST'])
-@jwt_required()
 def start_session():
-    user_id = get_jwt_identity()
     data = request.json
-    invited_friends = data.get('friends', [])  # List of friend IDs
-
-    new_session = Session(host_id=user_id, status='pending')
-    db.session.add(new_session)
-    db.session.commit()
-
-    name = User.query.filter_by(id=int(user_id)).first().username
-
-    # Add host as participant
-    host_participant = SessionParticipant(session_id=new_session.id, user_id=user_id)
-    host_participant.confirmed = True
-    db.session.add(host_participant)
-
-    # join_room(f'session_{new_session.id}')
-    # print(f"User {user_id} joined session room session_{new_session.id}")
-
-    # Add invited friends as participants
-    for friend_id in invited_friends:
-        participant = SessionParticipant(session_id=new_session.id, user_id=friend_id)
-        db.session.add(participant)
-
-    # Notify invited friends
-    for friend_id in invited_friends:
-        socketio.emit('session_invite',
-                      {'session_id': new_session.id, 'host': user_id, 'name': name},
-                      room=f'notif_{friend_id}')
-
-    db.session.commit()
-
-    return jsonify({'message': 'Session started', 'session_id': new_session.id})
-
-
-
-
-'''
-
-V2 need another def start_session() without jwt authentification and socketio.emit() and no invite
-@session_bp.route('/start_V2', methods=['POST'])
-def start_session_V2():
-    data = request.json
-    invited_friends = data.get('friends', [])  # List of friend IDs
-    name = data.get('name')
-
-    new_session = Session(host_id=user_id, status='pending')
+    host_name = data.get('host_name')
+    new_session = Session(host_name=host_name, status='pending')
     db.session.add(new_session)
     db.session.commit()
 
     # Add host as participant
-    host_participant = SessionParticipant(session_id=new_session.id, participant_name = name)
-    host_participant.confirmed = True
+    host_participant = SessionParticipant(session_id=new_session.id, name=host_name)
     db.session.add(host_participant)
-
     db.session.commit()
 
-    return jsonify({'message': 'Session started', 'session_id': new_session.id})
+    socketio.emit('message', {'session_id': new_session.id, 'name': host_name}, room=f'session_{new_session.id}')
 
-'''
+    return jsonify({'message': 'Session started', 'session_id': new_session.id, 'participant_id': host_participant.id})
 
 
-# Respond to a Session Invitation (Accept or Reject)
-@session_bp.route('/respond_invite', methods=['POST'])
-@jwt_required()
-def respond_invite():
-    user_id = get_jwt_identity()
+@session_bp.route('/join', methods=['POST'])
+def join_session():
     data = request.json
-    if not data:
-        return jsonify({'message': 'Invalid JSON payload'}), 422
-
     session_id = data.get('session_id')
-    action = data.get('action')  # "accept" or "reject"
-
-    if session_id is None or action is None:
-        return jsonify({'message': 'Missing session_id or action'}), 422
-
-    name = User.query.filter_by(id=int(user_id)).first().username
-
-    participant = SessionParticipant.query.filter_by(session_id=session_id, user_id=int(user_id)).first()
-    if not participant:
-        return jsonify({'message': 'Session invitation not found'}), 404
-
-    if action == "accept":
-        participant.confirmed = True
-        db.session.commit()
-        all_participants = SessionParticipant.query.filter_by(session_id=session_id).all()
-
-        # for elem in all_participants:
-        #     print(elem.confirmed)
-
-        if all([p.confirmed for p in all_participants]):
-            socketio.emit('session_ready', {'session_id': session_id}, room=f'session_{session_id}')
-            return jsonify({'message': f'Session {session_id} is ready for movie selection!'})
-        return jsonify({'message': 'Joined session successfully'})
-
-    elif action == "reject":
-        db.session.delete(participant)
-        db.session.commit()
-        remaining_participants = SessionParticipant.query.filter_by(session_id=session_id).all()
-
-        # if len(remaining_participants) < 2:
-        #     print('dwda')
-        #     socketio.emit('session_cancelled', {'session_id': session_id}, room=f'session_{session_id}')
-
-        if all([p.confirmed for p in remaining_participants]):
-            socketio.emit('session_ready', {'session_id': session_id}, room=f'session_{session_id}')
-            return jsonify({'message': 'Session invite rejected.'})
-
-        return jsonify({'message': 'Session invite rejected.'})
-
+    join_name = data.get('name')
+    session = Session.query.filter_by(id=session_id).first()
+    start = session.status
+    if start == 'active':
+        return jsonify({'message': 'Session has already started, no way for joining'})
+    elif start == 'completed':
+        return jsonify({'message': 'Session has already finished, no way for joining'})
     else:
-        return jsonify({'message': 'Invalid action'}), 400
+        new_session_participant = SessionParticipant(session_id=session_id, name=join_name)
+        db.session.add(new_session_participant)
+        db.session.commit()
+
+        # socketio.emit('message', {'session_id': session_id, 'name': join_name}, room=f'session_{session_id}')
+        return jsonify({'message': 'Join session successfully', 'participant_ID': new_session_participant.id})
 
 
-'''
-V2 need a function Join_Room() which use session.ID to join the room and use socket handler 
-@socketio.on('join_session_room')
-def handle_join_session_room(data) call it in the front-end to send the join info and host person catch that info
-'''
-
-'''
-V1 and V2 also need a function to start selection movies, in this function, function will be called by
-the Host, it will delete those who are on the pending list who still not confirmed, and then broadcast that 
-the now we start the game, In this case, for V1, the respond_invite() function only need to broadcast who join
-the session, no other message will be broadcast to other users.
-'''
-
-
-
-'''
-if use V2, the following function will not need jwt 
-token auth probably change the user_id to name since we do not have user
-
-pseudo-code modification
-Foe example
-@session_bp.route('/add_movie', methods=['POST'])
-@jwt_required()
-def add_movie():
+@session_bp.route('/begin', methods=['POST'])
+def Begin():
     data = request.json
     session_id = data.get('session_id')
-    movie_id = data.get('movie_id')
-    movie_pocket = MoviePocket(session_id=session_id, movie_id=movie_id)
-    db.session.add(movie_pocket)
+    session = Session.query.filter_by(id=session_id).first()
+    session.status = 'active'
     db.session.commit()
-    socketio.emit('movie_added',
-        {'session_id': session_id, 'movie_id': movie_id}, room=f'session_{session_id}')
-    return jsonify({'message': 'Movie added to pocket'})
-'''
+    socketio.emit('session_begin', {'session_id': session_id}, room=f'session_{session_id}')
+    return jsonify({'message': f'session {session_id} start'})
 
-# Add a Movie to the Session Pocket
+
+@session_bp.route('/list_join_participants', methods=['GET'])
+def list_participants():
+    session_id = request.args.get('session_id')  # Retrieve from query params
+    if not session_id:
+        return jsonify({'error': 'session_id is required'}), 400
+
+        # Your logic to fetch participants based on session_id
+    participants = SessionParticipant.query.filter_by(session_id=session_id)  # Example function
+    participants_name = []
+    for elem in participants:
+        participants_name.append(elem.name)
+
+    return jsonify({'session_id': session_id, 'participants_name': participants_name})
+
+
 @session_bp.route('/add_movie', methods=['POST'])
-@jwt_required()
 def add_movie():
-    user_id = get_jwt_identity()
     data = request.json
     session_id = data.get('session_id')
-
-    '''
-    call it multiple times to add more movies
-    '''
     movie_id = data.get('movie_id')
+    p_id = data.get('participant_ID')
 
     # Check if the user is a participant
-    participant = SessionParticipant.query.filter_by(session_id=session_id, user_id=int(user_id)).first()
+    participant = SessionParticipant.query.filter_by(id=p_id).first()
     if not participant:
         return jsonify({'message': 'Not part of this session'}), 403
     '''
@@ -193,38 +99,59 @@ def add_movie():
 
 
 @session_bp.route('/finish_selection', methods=['POST'])
-@jwt_required()
 def finish_selection():
-    user_id = get_jwt_identity()
     data = request.json
     session_id = data.get('session_id')
+    p_id = data.get('participant_id')
 
     # Check if the user is a participant
-    participant = SessionParticipant.query.filter_by(session_id=session_id, user_id=user_id).first()
-    if not participant:
+    participant = SessionParticipant.query.filter_by(id=p_id).first()
+    if participant.session_id != session_id:
         return jsonify({'message': 'Not part of this session'}), 403
 
     # Mark this user as done selecting movies
     participant.done_selecting = True
     db.session.commit()
 
-    # Check if all participants are done selecting
+    # Retrieve all participants in the session
     all_participants = SessionParticipant.query.filter_by(session_id=session_id).all()
-    if all([p.done_selecting for p in all_participants]):  # If everyone is done
-        socketio.emit('selection_complete', {'session_id': session_id}, room=f'session_{session_id}')
-        return jsonify({'message': f'All users finished selecting for session {session_id}. Voting can start now.'})
+    total_participants = len(all_participants)
+    done_participants = sum(1 for p in all_participants if p.done_selecting)
 
-    return jsonify({'message': 'You have finished selecting. Waiting for others.'})
+    # Emit progress update to all participants
+    socketio.emit('selection_progress', {
+        'session_id': session_id,
+        'total_participants': total_participants,
+        'done_participants': done_participants
+    }, room=f'session_{session_id}')
+
+    # Check if all participants are done selecting
+    if done_participants == total_participants:
+        socketio.emit('selection_complete', {'session_id': session_id}, room=f'session_{session_id}')
+
+        '''do not capture this'''
+        return jsonify({
+            'message': f'All users finished selecting for session {session_id}. Voting can start now.',
+            'total_participants': total_participants,
+            'done_participants': done_participants
+        })
+
+    return jsonify({
+        'message': 'You have finished selecting. Waiting for others.',
+        'total_participants': total_participants,
+        'done_participants': done_participants
+    })
 
 
 @session_bp.route('/movies_in_pocket', methods=['GET'])
-@jwt_required()
 def movies_in_pocket():
-    user_id = get_jwt_identity()
-    session_id = request.args.get('session_id')
+    data = request.json
+
+    p_id = data.get('participant_id')
+    session_id = data.get('session_id')
 
     # Check if the user is a participant in this session
-    participant = SessionParticipant.query.filter_by(session_id=session_id, user_id=int(user_id)).first()
+    participant = SessionParticipant.query.filter_by(session_id=session_id, id=p_id).first()
     if not participant:
         return jsonify({'message': 'Not part of this session'}), 403
 
@@ -238,14 +165,16 @@ def movies_in_pocket():
     return jsonify({'session_id': session_id, 'movies': movie_list})
 
 
-# Vote for a Movie in the Session
 @session_bp.route('/vote', methods=['POST'])
-@jwt_required()
 def vote():
-    user_id = get_jwt_identity()
     data = request.json
     session_id = data.get('session_id')
     movie_id = data.get('movie_id')
+    p_id = data.get('participant_id')
+
+    participant = SessionParticipant.query.filter_by(session_id=session_id, id=p_id).first()
+    if not participant:
+        return jsonify({'message': 'Not part of this session'}), 403
 
     movie_pocket = MoviePocket.query.filter_by(session_id=session_id, movie_id=movie_id).first()
     if not movie_pocket:
@@ -261,14 +190,13 @@ def vote():
 
 
 @session_bp.route('/finish_voting', methods=['POST'])
-@jwt_required()
 def finish_voting():
-    user_id = get_jwt_identity()
     data = request.json
     session_id = data.get('session_id')
+    p_id = data.get('participant_id')
 
     # Check if the user is a participant in this session
-    participant = SessionParticipant.query.filter_by(session_id=session_id, user_id=user_id).first()
+    participant = SessionParticipant.query.filter_by(id=p_id).first()
     if not participant:
         return jsonify({'message': 'Not part of this session'}), 403
 
@@ -276,21 +204,38 @@ def finish_voting():
     participant.done_voting = True
     db.session.commit()
 
-    # Check if all participants are done voting
+
+    # Retrieve all participants in the session
     all_participants = SessionParticipant.query.filter_by(session_id=session_id).all()
-    if all([p.done_voting for p in all_participants]):  # If everyone finished voting
-        winning_movie = MoviePocket.query.filter_by(session_id=session_id).order_by(MoviePocket.votes.desc()).first()
+    total_participants = len(all_participants)
+    done_participants = sum(1 for p in all_participants if p.done_voting)
 
-        socketio.emit('voting_complete', {'session_id': session_id, 'winning_movie_id': winning_movie.movie_id},
-                      room=f'session_{session_id}')
-        return jsonify({'message': f'All users finished voting for session {session_id}. final_movie is {winning_movie.movie_id}'})
+    # Emit progress update to all participants
+    socketio.emit('voting_progress', {
+        'session_id': session_id,
+        'total_participants': total_participants,
+        'done_participants': done_participants
+    }, room=f'session_{session_id}')
 
-    return jsonify({'message': 'You have finished voting. Waiting for others.'})
+    # Check if all participants are done selecting
+    if done_participants == total_participants:
+        socketio.emit('voting_complete', {'session_id': session_id}, room=f'session_{session_id}')
 
+        '''do not capture this'''
+        return jsonify({
+            'message': f'All users finished voting for session {session_id}. Voting can start now.',
+            'total_participants': total_participants,
+            'done_participants': done_participants
+        })
+
+    return jsonify({
+        'message': 'You have finished voting. Waiting for others.',
+        'total_participants': total_participants,
+        'done_participants': done_participants
+    })
 
 # Retrieve the Final (Winning) Movie for the Session
-@session_bp.route('/final_movie/<int:session_id>', methods=['GET'])
-@jwt_required()
+@session_bp.route('/final_movie/<string:session_id>', methods=['GET'])
 def final_movie(session_id):
     winning_movie = MoviePocket.query.filter_by(session_id=session_id).order_by(MoviePocket.votes.desc()).first()
 
