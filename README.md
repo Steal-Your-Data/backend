@@ -30,7 +30,7 @@ This is the final project for CS506. The app allows friends to **(`start a sessi
    ```
 
 ## High Level Workflow Diagram
-![Alt text](WorkFlow Chart.jpeg)
+![Alt text](./images/WorkFlow Chart.jpeg)
 
 ## Contribution Guidelines
 - Follow the Git branching workflow (`feature-branch`, `dev`, `main`).
