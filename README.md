@@ -32,6 +32,11 @@ This is the final project for CS506. The app allows friends to **(`start a sessi
 ## High Level Workflow Diagram
 ![Alt text](WorkFlow_Chart.jpeg)
 
+
+## Potential Modification of the Database
+
+
+
 ## Contribution Guidelines
 - Follow the Git branching workflow (`feature-branch`, `dev`, `main`).
 - Use descriptive commit messages.
