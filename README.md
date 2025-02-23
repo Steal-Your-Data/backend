@@ -29,6 +29,9 @@ This is the final project for CS506. The app allows friends to **(`start a sessi
    python app.py
    ```
 
+## High Level Workflow Diagram
+
+
 ## Contribution Guidelines
 - Follow the Git branching workflow (`feature-branch`, `dev`, `main`).
 - Use descriptive commit messages.
