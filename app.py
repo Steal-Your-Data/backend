@@ -1,17 +1,16 @@
-# app.py
 import os
-from flask import Flask
-from extentions import db, login_manager, jwt, socketio
+from flask import Flask, jsonify
 from datetime import timedelta
-from flask import jsonify
 from flask_cors import CORS
+from extentions import db, login_manager, jwt, socketio
 
 def create_app():
     app = Flask(__name__)
     CORS(app)
 
     # Configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/terry/Desktop/CS506/movies.db'
+    # Use the environment variable APP_SQL if it exists, otherwise fall back to the default value.
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('APP_SQL', 'sqlite:////Users/terry/Desktop/CS506/movies.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = 'your_secret_key'
     app.config['JWT_SECRET_KEY'] = 'your_jwt_secret_key'
@@ -41,7 +40,6 @@ def create_app():
 
     from model import RevokedToken
 
-
     # Define JWT callbacks here (optional: you can also define these in extentions.py)
     @jwt.token_in_blocklist_loader
     def check_if_token_in_blocklist(jwt_header, jwt_payload):
@@ -55,9 +53,7 @@ def create_app():
             "error": "token_revoked"
         }), 401
 
-
     return app
-
 
 import socket_events
 
