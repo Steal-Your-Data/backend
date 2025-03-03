@@ -88,6 +88,14 @@ CREATE TABLE movie_pocket (
 
 And also You might change the add_movies API in session_routes.py accordingly
 
+## Updates 3/2/2025
+
+Fixing/Solving some potential inconvenience for the front-end guys. In (`socket_events.py`). Previously, the function called (`handle_join_session_room()`) only emit messages about which user joining the session, but not a whole list of people in this session. This will cause inconvenience when We update the joining guest list in the frontend. Since they need to call twice firstly when they join they will call (`list_participants()`) in session_routes.py and then they need to listen to SocketIO broadcast to add other person who are newly joining the session one by one, which might be inconvenient to impelement in the front end. Thus the newly (`socket_events.py`) is a compiled version of it. In the frontend, only need to listen to socket events **join_session_room**, then you will get the updated session participants list in the session. Though the cost is a bit high in the frontend, but considering for one session, probably there will only be 8 - 9 people at maximum, it is not a big deal to update the list 8 to 9 times.
+
+Below are the new logs, once we hit the join_room button under Socket.IO Actions in .html file called (`complete_version_html_testing.html`)
+
+![Alt text](new_output_for_joinroom.jpeg)
+
 
 
 
