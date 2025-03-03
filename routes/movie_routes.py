@@ -45,3 +45,26 @@ def Get_info_id():
 
     return jsonify(result)
 
+@movie_bp.route('/get_movie_info_by_ids', methods=['GET'])
+def Get_info_ids():
+    data = request.json
+    movie_ids = data.get('ids')
+    results = []
+    for movie_id in movie_ids:
+        movie = Movie.query.filter_by(id=movie_id).first()
+
+        result = {
+                'id': movie.id,
+                'title': movie.title,
+                'genres': movie.genres,
+                'original_language': movie.original_language,
+                'overview': movie.overview,
+                'popularity': movie.popularity,
+                'release_date': movie.release_date.isoformat() if movie.release_date else None,
+                'poster_path': movie.poster_path
+            }
+        results.append(result)
+
+    return jsonify(results)
+
+
