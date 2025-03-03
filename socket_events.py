@@ -1,65 +1,38 @@
 from flask import request
 from flask_socketio import join_room,leave_room
 from extentions import socketio  # Import the initialized socketio instance
-from model import SessionParticipant,User
-
-
-'''
------------------------------------------------------------------------------
-if V2, this is useless
-'''
-@socketio.on('connect')
-def handle_connect():
-    user_id = request.args.get("user_id")  # Extract user ID from query params
-    if user_id:
-        join_room(f'notif_{user_id}')  # User joins their personal notification room
-        print(f"User {user_id} connected and joined room notif_{user_id}")
-    else:
-        print("No user_id provided in query parameters")
-        # # Add user to any session they are part of
-        # active_sessions = SessionParticipant.query.filter_by(user_id=user_id).all()
-        # for session in active_sessions:
-        #     join_room(f'session_{session.session_id}')
-        #     print(f"User {user_id} joined session room session_{session.session_id}")
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    print("User disconnected")
-'''
------------------------------------------------------------------------------
-if V2, this is useless
-'''
-
+from model import SessionParticipant
 
 
 @socketio.on('join_session_room')
 def handle_join_session_room(data):
     session_id = data.get("session_id")
-    # user_id = request.args.get("user_id")  # from the socket connection
-    user_id = data.get("user_id")
-    if session_id and user_id:
+    name = data.get("name")
+
+    participants = SessionParticipant.query.filter_by(session_id=session_id)
+    names = []
+    for participant in participants:
+        names.append(participant.name)
+
+
+    if session_id:
         join_room(f"session_{session_id}")
-        print(f"User {user_id} joined session room session_{session_id}")
+        # print(f"User {name} joined session room session_{session_id}")
         # Now broadcast that the user joined:
-        user = User.query.get(user_id)
-        name = user.username if user else "Unknown"
         socketio.emit("user_joined",
-                      {"session_id": session_id, "user_id": user_id, "name": name},
+                      {"session_id": session_id, "name": names},
                       room=f"session_{session_id}")
 
 
 @socketio.on('leave_session_room')
 def handle_leave_session_room(data):
     session_id = data.get("session_id")
-    user_id = data.get("user_id")
-
-    if session_id and user_id:
-        leave_room(f"session_{session_id}")
-        print(f"User {user_id} left session room session_{session_id}")
+    name = data.get("name")
+    if session_id:
+        leave_room(f"session_{name}")
+        print(f"User {name} left session room session_{session_id}")
 
         # Broadcast that the user left the session room
-        user = User.query.get(user_id)
-        name = user.username if user else "Unknown"
         socketio.emit("user_left",
-                      {"session_id": session_id, "user_id": user_id, "name": name},
+                      {"session_id": session_id, "name": name},
                       room=f"session_{session_id}")

@@ -2,362 +2,285 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Compiled Version - Friend, Session & Movie Management</title>
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .box { border: 1px solid #ccc; padding: 15px; width: 350px; margin-bottom: 10px; }
-    .log-box { border: 1px solid #ccc; background: #f9f9f9; padding: 10px; height: 150px; overflow-y: auto; margin-top: 10px; }
-    .button { padding: 10px; margin-top: 10px; cursor: pointer; }
-    input { padding: 8px; margin: 5px 0; width: 95%; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movie Session Tester</title>
+  <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
 </head>
 <body>
-  <h2>Compiled Version: Friend, Session & Movie Management</h2>
-  
-  <!-- Login Box -->
-  <div class="box" id="login-box">
-    <h3>Login</h3>
-    <label>Email:</label>
-    <input type="email" id="email" placeholder="Enter your email"><br>
-    <label>Password:</label>
-    <input type="password" id="password" placeholder="Enter your password"><br>
-    <button class="button" onclick="login()">Login</button>
+  <h1>Movie Session API Tester</h1>
+
+  <h3>Session Controls</h3>
+  <div>
+    <input type="text" id="host_name" placeholder="Enter Host Name">
+    <button onclick="startSession()">Start Session</button>
   </div>
-  
-  <!-- Friend Management Box (Hidden until login) -->
-  <div class="box" id="friend-box" style="display: none;">
-    <h3>Friend Management</h3>
-    <label>Friend's Email:</label>
-    <input type="email" id="friend_email" placeholder="Enter friend's email"><br>
-    <button class="button" onclick="sendFriendRequest()">Send Friend Request</button>
+
+  <div>
+    <input type="text" id="session_id_join" placeholder="Enter Session ID">
+    <input type="text" id="join_name" placeholder="Enter Your Name">
+    <button onclick="joinSession()">Join Session</button>
   </div>
-  
-  <!-- Incoming Friend Request Box (Hidden until a request is received) -->
-  <div class="box" id="request-box" style="display: none;">
-    <h3>Incoming Friend Request</h3>
-    <p id="request-message"></p>
-    <button class="button" onclick="respondToRequest('accept')">Accept</button>
-    <button class="button" onclick="respondToRequest('reject')">Reject</button>
+
+  <div>
+    <input type="text" id="session_id_begin" placeholder="Enter Session ID">
+    <button onclick="beginSession()">Begin Session</button>
   </div>
-  
-  <!-- Session Management (Host) Box (Hidden until login) -->
-  <div class="box" id="session-host-box" style="display: none;">
-    <h3>Session Management (Host)</h3>
-    <label>Session ID:</label>
-    <input type="text" id="host_session_id" placeholder="Enter Session ID"><br>
-    <button class="button" onclick="joinSession()">Join Session Room</button>
+
+  <div>
+    <input type="text" id="session_id_list" placeholder="Enter Session ID">
+    <button onclick="listParticipants()">List Participants</button>
   </div>
-  
-  <!-- Start Session Box (Host Only) -->
-  <div class="box" id="start-session-box" style="display: none;">
-    <h3>Start Session (Host)</h3>
-    <label>Invited Friend IDs (comma separated):</label>
-    <input type="text" id="friend_ids" placeholder="e.g., 2,3,4"><br>
-    <button class="button" onclick="startSession()">Start Session</button>
+
+  <h3>Movie Actions</h3>
+  <div>
+    <input type="text" id="movie_session_id" placeholder="Enter Session ID">
+    <input type="text" id="movie_id" placeholder="Enter Movie ID">
+    <input type="text" id="movie_participant_id" placeholder="Enter Your Participant ID">
+    <button onclick="addMovie()">Add Movie</button>
   </div>
-  
-  <!-- Session Invitation (Guest) Box (Hidden until invitation received) -->
-  <div class="box" id="session-invite-box" style="display: none;">
-    <h3>Session Invitation (Guest)</h3>
-    <p id="invite-message"></p>
-    <button class="button" onclick="respondSessionInvite('accept')">Accept</button>
-    <button class="button" onclick="respondSessionInvite('reject')">Reject</button>
+
+  <h3>Finish Selection</h3>
+  <div>
+    <input type="text" id="finish_session_id" placeholder="Enter Session ID">
+    <input type="text" id="finish_participant_id" placeholder="Enter Your Participant ID">
+    <button onclick="finishSelection()">Finish Selection</button>
   </div>
-  
-  <!-- Movie Selection & Voting Box -->
-  <div class="box" id="movie-box" style="display: none;">
-    <h3>Movie Selection & Voting</h3>
-    <label>Session ID:</label>
-    <input type="text" id="movie_session_id" placeholder="Enter Session ID"><br>
-    <label>Movie ID:</label>
-    <input type="text" id="movie_id" placeholder="Enter Movie ID"><br>
-    <button class="button" onclick="addMovieToSession()">Add Movie</button>
-    <button class="button" onclick="finishMovieSelection()">Finish Selection</button>
-    <button class="button" onclick="voteMovie()">Vote</button>
-    <button class="button" onclick="finishVoting()">Finish Voting</button>
+
+  <h3>Socket.IO Actions</h3>
+  <div>
+    <input type="text" id="session_id_socket" placeholder="Enter Session ID">
+    <input type="text" id="user_name" placeholder="Enter Your Name">
+    <button onclick="joinSessionRoom()">Join Room</button>
+    <button onclick="leaveSessionRoom()">Leave Room</button>
   </div>
-  
-  <!-- Log Box (Global) -->
-  <h3>Log</h3>
-  <div class="log-box" id="log-box"></div>
-  
+
+  <h3>Voting &amp; Results</h3>
+  <!-- Movies in Pocket -->
+  <div>
+    <h4>Movies in Pocket</h4>
+    <input type="text" id="movies_in_pocket_session_id" placeholder="Enter Session ID">
+    <input type="text" id="movies_in_pocket_participant_id" placeholder="Enter Your Participant ID">
+    <button onclick="moviesInPocket()">Get Movies in Pocket</button>
+  </div>
+
+  <!-- Vote on Movie -->
+  <div>
+    <h4>Vote on Movie</h4>
+    <input type="text" id="vote_session_id" placeholder="Enter Session ID">
+    <input type="text" id="vote_movie_id" placeholder="Enter Movie ID">
+    <input type="text" id="vote_participant_id" placeholder="Enter Your Participant ID">
+    <button onclick="vote()">Vote</button>
+  </div>
+
+  <!-- Finish Voting -->
+  <div>
+    <h4>Finish Voting</h4>
+    <input type="text" id="finish_voting_session_id" placeholder="Enter Session ID">
+    <input type="text" id="finish_voting_participant_id" placeholder="Enter Your Participant ID">
+    <button onclick="finishVoting()">Finish Voting</button>
+  </div>
+
+  <!-- Final Movie -->
+  <div>
+    <h4>Final Movie</h4>
+    <input type="text" id="final_movie_session_id" placeholder="Enter Session ID">
+    <button onclick="finalMovie()">Get Final Movie</button>
+  </div>
+
+  <h3>Logs</h3>
+  <pre id="logs"></pre>
+
   <script>
-    const backendUrl = "http://localhost:5000";  // Adjust if needed
-    let socket;                   // Socket.IO connection
-    let jwtToken = "";            // Stored JWT token after login
-    let userId = "";              // User ID returned on login
-    let pendingRequestId = null;  // To store incoming friend request ID
-    let currentSessionId = null;  // To store session invitation ID
-    
-    // Helper: Log messages in the global log box.
-    function logMessage(message, type = "info") {
-      const logBox = document.getElementById("log-box");
-      const msgElem = document.createElement("div");
-      msgElem.textContent = `[${type.toUpperCase()}] ${message}`;
-      logBox.appendChild(msgElem);
-      logBox.scrollTop = logBox.scrollHeight;
+    const socket = io("http://localhost:5000");
+
+    function logMessage(message) {
+      const logElement = document.getElementById("logs");
+      logElement.textContent += message + "\n";
     }
-    
-    // Login: Call /auth/login, store JWT and userId, then connect to Socket.IO.
-    function login() {
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-      if (!email || !password) {
-        logMessage("Enter both email and password", "error");
-        return;
-      }
-      fetch(`${backendUrl}/auth/login`, {
+
+    // Session Control Functions
+    function startSession() {
+      const hostName = document.getElementById("host_name").value;
+      fetch("http://localhost:5000/session/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ host_name: hostName })
       })
       .then(response => response.json())
-      .then(data => {
-        if (data.access_token) {
-          jwtToken = `Bearer ${data.access_token}`;
-          userId = data.user_id;
-          logMessage(`Logged in as ${data.username}`, "system");
-          document.getElementById("login-box").style.display = "none";
-          document.getElementById("friend-box").style.display = "block";
-          document.getElementById("session-host-box").style.display = "block";
-          document.getElementById("start-session-box").style.display = "block";
-          document.getElementById("movie-box").style.display = "block";
-          connectSocket(userId);  // Connect to Socket.IO with user_id.
-        } else {
-          logMessage("Login failed: " + data.message, "error");
-        }
-      })
-      .catch(error => logMessage("Error: " + error, "error"));
+      .then(data => logMessage("Session Started: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
     }
-    
-    // Connect to Socket.IO with user_id passed in query.
-    function connectSocket(userId) {
-      if (socket) socket.disconnect();
-      console.log(`Connecting with user_id: ${userId}`);
-      socket = io(backendUrl, {
-        query: { user_id: userId },
-        transports: ["websocket"]
-      });
-      socket.on("connect", () => {
-        console.log(`Connected as User ${userId}`);
-        logMessage(`Connected to notifications as User ${userId}`, "system");
-      });
-      // Friend request events.
-      socket.on("friend_request", (data) => {
-        pendingRequestId = data.request_id;
-        document.getElementById("request-box").style.display = "block";
-        document.getElementById("request-message").innerText = `New friend request from ${data.from_username}`;
-        logMessage(`New friend request from ${data.from_username}`, "system");
-      });
-      socket.on("friend_request_accepted", (data) => {
-        logMessage(`Your friend request was accepted by ${data.from_username}`, "system");
-      });
-      // Session invitation (for guests).
-      socket.on("session_invite", (data) => {
-        currentSessionId = data.session_id;
-        document.getElementById("session-invite-box").style.display = "block";
-        document.getElementById("invite-message").innerText = `Invitation: Join session ${data.session_id} hosted by ${data.name}`;
-        logMessage(`Received session invitation from host ${data.name} for session ${data.session_id}`, "system");
-      });
-      // Session events.
-      socket.on("session_ready", (data) => {
-        logMessage(`Session ${data.session_id} is ready for movie selection!`, "system");
-      });
-      socket.on("session_cancelled", (data) => {
-        logMessage(`Session ${data.session_id} has been cancelled.`, "error");
-      });
-      // Movie selection/voting events.
-      socket.on("movie_added", (data) => {
-        logMessage(`Movie ${data.movie_id} added to session ${data.session_id}`, "system");
-      });
-      socket.on("vote_update", (data) => {
-        logMessage(`Movie ${data.movie_id} in session ${data.session_id} now has ${data.votes} votes`, "system");
-      });
-      socket.on("selection_complete", (data) => {
-        logMessage(`All users finished selecting for session ${data.session_id}. Voting can start now.`, "system");
-      });
-      socket.on("voting_complete", (data) => {
-        logMessage(`All users finished voting for session ${data.session_id}. Final movie is ${data.winning_movie_id}`, "system");
-      });
-      socket.on("final_movie_result", (data) => {
-        logMessage(`Final Movie for session ${data.session_id}: Movie ${data.movie_id} with ${data.votes} votes`, "system");
-      });
-      // Global user_joined event.
-      socket.on("user_joined", (data) => {
-        logMessage(`User ${data.name} joined session ${data.session_id}`, "system");
-      });
-      socket.on("disconnect", () => {
-        console.log("Socket disconnected");
-        logMessage("Disconnected from notifications", "error");
-      });
-    }
-    
-    // Friend management: Send friend request.
-    function sendFriendRequest() {
-      const friendEmail = document.getElementById("friend_email").value.trim();
-      if (!jwtToken || !friendEmail) {
-        logMessage("Enter a friend's email", "error");
-        return;
-      }
-      fetch(`${backendUrl}/user/send_friend_request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": jwtToken },
-        body: JSON.stringify({ email: friendEmail })
-      })
-      .then(response => response.json())
-      .then(data => logMessage(data.message, "system"))
-      .catch(error => logMessage("Error: " + error, "error"));
-    }
-    
-    // Friend management: Respond to friend request.
-    function respondToRequest(action) {
-      if (!jwtToken || !pendingRequestId) {
-        logMessage("No friend request to respond to", "error");
-        return;
-      }
-      fetch(`${backendUrl}/user/respond_friend_request`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": jwtToken },
-        body: JSON.stringify({ request_id: pendingRequestId, action })
-      })
-      .then(response => response.json())
-      .then(data => {
-        logMessage(data.message, "system");
-        document.getElementById("request-box").style.display = "none";
-        pendingRequestId = null;
-      })
-      .catch(error => logMessage("Error: " + error, "error"));
-    }
-    
-    // Session management: Host joins a session room.
+
     function joinSession() {
-      const sessionId = document.getElementById("host_session_id").value.trim();
-      if (!sessionId) {
-        logMessage("Please enter a session ID to join.", "error");
-        return;
-      }
-      socket.emit("join_session_room", { session_id: sessionId, user_id: userId });
-      logMessage(`Joined session room: ${sessionId}`, "system");
-    }
-    
-    // Session management: Host starts a session by inviting friends.
-    function startSession() {
-      const friendIdsStr = document.getElementById("friend_ids").value.trim();
-      if (!jwtToken) {
-        logMessage("You must be logged in to start a session.", "error");
-        return;
-      }
-      if (!friendIdsStr) {
-        logMessage("Please enter at least one friend ID.", "error");
-        return;
-      }
-      const friendIds = friendIdsStr.split(",").map(id => Number(id.trim())).filter(id => !isNaN(id));
-      fetch(`${backendUrl}/session/start`, {
+      const sessionId = document.getElementById("session_id_join").value;
+      const joinName = document.getElementById("join_name").value;
+      fetch("http://localhost:5000/session/join", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": jwtToken },
-        body: JSON.stringify({ friends: friendIds })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, name: joinName })
       })
       .then(response => response.json())
-      .then(data => {
-        logMessage(`${data.message} (Session ID: ${data.session_id})`, "system");
-        socket.emit("join_session_room", { session_id: data.session_id, user_id: userId });
-      })
-      .catch(error => logMessage("Error: " + error, "error"));
+      .then(data => logMessage("Joined Session: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
     }
-    
-    // Session management: Guest responds to session invitation.
-    function respondSessionInvite(action) {
-      if (!jwtToken || !currentSessionId) {
-        logMessage("No session invitation to respond to.", "error");
-        return;
-      }
-      fetch(`${backendUrl}/session/respond_invite`, {
+
+    function beginSession() {
+      const sessionId = document.getElementById("session_id_begin").value;
+      fetch("http://localhost:5000/session/begin", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": jwtToken },
-        body: JSON.stringify({ session_id: Number(currentSessionId), action })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId })
       })
       .then(response => response.json())
-      .then(data => {
-        logMessage(data.message, "system");
-        document.getElementById("session-invite-box").style.display = "none";
-        if (action === "accept" && data.message.toLowerCase().includes("joined")) {
-          socket.emit("join_session_room", { session_id: Number(currentSessionId), user_id: userId });
-        }
-        currentSessionId = null;
-      })
-      .catch(error => logMessage("Error: " + error, "error"));
+      .then(data => logMessage("Session Began: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
     }
-    
-    // Movie selection & voting: Add movie to session pocket.
-    function addMovieToSession() {
-      const sessionId = document.getElementById("movie_session_id").value.trim();
-      const movieId = document.getElementById("movie_id").value.trim();
-      if (!jwtToken || !sessionId || !movieId) {
-        logMessage("Please enter session ID and movie ID", "error");
-        return;
-      }
-      fetch(`${backendUrl}/session/add_movie`, {
+
+    function listParticipants() {
+      const sessionId = document.getElementById("session_id_list").value;
+      fetch(`http://localhost:5000/session/list_join_participants?session_id=${sessionId}`)
+      .then(response => response.json())
+      .then(data => logMessage("Participants: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
+    }
+
+    // Movie Actions
+    function addMovie() {
+      const sessionId = document.getElementById("movie_session_id").value;
+      const movieId = document.getElementById("movie_id").value;
+      const participantId = document.getElementById("movie_participant_id").value;
+      fetch("http://localhost:5000/session/add_movie", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": jwtToken },
-        body: JSON.stringify({ session_id: Number(sessionId), movie_id: Number(movieId) })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, movie_id: movieId, participant_ID: participantId })
       })
       .then(response => response.json())
-      .then(data => logMessage(data.message, "system"))
-      .catch(error => logMessage("Error: " + error, "error"));
+      .then(data => logMessage("Movie Added: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
     }
-    
-    // Movie selection & voting: Finish movie selection.
-    function finishMovieSelection() {
-      const sessionId = document.getElementById("movie_session_id").value.trim();
-      if (!jwtToken || !sessionId) {
-        logMessage("Please enter session ID", "error");
-        return;
-      }
-      fetch(`${backendUrl}/session/finish_selection`, {
+
+    function finishSelection() {
+      const sessionId = document.getElementById("finish_session_id").value;
+      const participantId = document.getElementById("finish_participant_id").value;
+      fetch("http://localhost:5000/session/finish_selection", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": jwtToken },
-        body: JSON.stringify({ session_id: Number(sessionId) })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, participant_id: participantId })
       })
       .then(response => response.json())
-      .then(data => logMessage(data.message, "system"))
-      .catch(error => logMessage("Error: " + error, "error"));
+      .then(data => logMessage("Finish Selection: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
     }
-    
-    // Movie selection & voting: Vote for a movie.
-    function voteMovie() {
-      const sessionId = document.getElementById("movie_session_id").value.trim();
-      const movieId = document.getElementById("movie_id").value.trim();
-      if (!jwtToken || !sessionId || !movieId) {
-        logMessage("Please enter session ID and movie ID", "error");
-        return;
-      }
-      fetch(`${backendUrl}/session/vote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": jwtToken },
-        body: JSON.stringify({ session_id: Number(sessionId), movie_id: Number(movieId) })
+
+    // Socket.IO Room Functions
+    function joinSessionRoom() {
+      const sessionId = document.getElementById("session_id_socket").value;
+      const userName = document.getElementById("user_name").value;
+      socket.emit("join_session_room", { session_id: sessionId, name: userName });
+    }
+
+    function leaveSessionRoom() {
+      const sessionId = document.getElementById("session_id_socket").value;
+      const userName = document.getElementById("user_name").value;
+      socket.emit("leave_session_room", { session_id: sessionId, name: userName });
+    }
+
+    // Voting & Results Functions
+    function moviesInPocket() {
+      const sessionId = document.getElementById("movies_in_pocket_session_id").value;
+      const participantId = document.getElementById("movies_in_pocket_participant_id").value;
+      fetch("http://localhost:5000/session/movies_in_pocket", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        // Note: Some browsers may not support a body in GET requests.
+        body: JSON.stringify({ session_id: sessionId, participant_id: participantId })
       })
       .then(response => response.json())
-      .then(data => logMessage(data.message, "system"))
-      .catch(error => logMessage("Error: " + error, "error"));
+      .then(data => logMessage("Movies in Pocket: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
     }
-    
-    // Movie selection & voting: Finish voting.
+
+    function vote() {
+      const sessionId = document.getElementById("vote_session_id").value;
+      const movieId = document.getElementById("vote_movie_id").value;
+      const participantId = document.getElementById("vote_participant_id").value;
+      fetch("http://localhost:5000/session/vote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, movie_id: movieId, participant_id: participantId })
+      })
+      .then(response => response.json())
+      .then(data => logMessage("Vote: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
+    }
+
     function finishVoting() {
-      const sessionId = document.getElementById("movie_session_id").value.trim();
-      if (!jwtToken || !sessionId) {
-        logMessage("Please enter session ID", "error");
-        return;
-      }
-      fetch(`${backendUrl}/session/finish_voting`, {
+      const sessionId = document.getElementById("finish_voting_session_id").value;
+      const participantId = document.getElementById("finish_voting_participant_id").value;
+      fetch("http://localhost:5000/session/finish_voting", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": jwtToken },
-        body: JSON.stringify({ session_id: Number(sessionId) })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, participant_id: participantId })
       })
       .then(response => response.json())
-      .then(data => logMessage(data.message, "system"))
-      .catch(error => logMessage("Error: " + error, "error"));
+      .then(data => logMessage("Finish Voting: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
     }
+
+    function finalMovie() {
+      const sessionId = document.getElementById("final_movie_session_id").value;
+      fetch(`http://localhost:5000/session/final_movie/${sessionId}`, {
+        method: "GET"
+      })
+      .then(response => response.json())
+      .then(data => logMessage("Final Movie: " + JSON.stringify(data)))
+      .catch(error => logMessage("Error: " + error));
+    }
+
+    // Socket.IO Event Handlers
+    socket.on("message", function(data) {
+      logMessage("SocketIO Message: " + JSON.stringify(data));
+    });
+
+    socket.on("user_joined", function(data) {
+      logMessage("User Joined Room: " + JSON.stringify(data));
+    });
+
+    socket.on("user_left", function(data) {
+      logMessage("User Left Room: " + JSON.stringify(data));
+    });
+
+    socket.on("session_begin", function(data) {
+      logMessage("Session Started (Socket): " + JSON.stringify(data));
+    });
+
+    socket.on("movie_added", function(data) {
+      logMessage("Movie Added (Socket): " + JSON.stringify(data));
+    });
+
+    socket.on("selection_progress", function(data) {
+      logMessage("Selection Progress (Socket): " + JSON.stringify(data));
+    });
+
+    socket.on("selection_complete", function(data) {
+      logMessage("Selection Complete (Socket): " + JSON.stringify(data));
+    });
+
+    socket.on("vote_update", function(data) {
+      logMessage("Vote Update (Socket): " + JSON.stringify(data));
+    });
+
+    socket.on("voting_progress", function(data) {
+      logMessage("Voting Progress (Socket): " + JSON.stringify(data));
+    });
+
+    socket.on("voting_complete", function(data) {
+      logMessage("Voting Complete (Socket): " + JSON.stringify(data));
+    });
+
+    socket.on("final_movie_result", function(data) {
+      logMessage("Final Movie Result (Socket): " + JSON.stringify(data));
+    });
   </script>
 </body>
 </html>
