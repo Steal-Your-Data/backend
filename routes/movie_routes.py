@@ -26,14 +26,22 @@ def search_movies():
     return jsonify(result)
 
 
-'''add function & retrieve specific movies, just the title you can leave other blanks'''
+@movie_bp.route('/get_movie_info_by_id', methods=['GET'])
+def Get_info_id():
+    movie_id = request.args.get('id')
 
-'''
-@movie_bp.route('/search', methods=['GET'])
-def add_movies():
+    movie = Movie.query.filter_by(id=movie_id).first()
 
+    result = {
+            'id': movie.id,
+            'title': movie.title,
+            'genres': movie.genres,
+            'original_language': movie.original_language,
+            'overview': movie.overview,
+            'popularity': movie.popularity,
+            'release_date': movie.release_date.isoformat() if movie.release_date else None,
+            'poster_path': movie.poster_path
+        }
 
+    return jsonify(result)
 
-
-
-'''
