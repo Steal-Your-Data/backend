@@ -1,17 +1,25 @@
 from flask import Blueprint, request, jsonify
 from extentions import db, socketio
 from model import Session, SessionParticipant, MoviePocket
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from sqlalchemy.sql import func
+import random
 
 session_bp = Blueprint('session', __name__)
 
+def generate_unique_session_id():
+    while True:
+        new_id = str(random.randint(100000, 999999))  # Generate a 6-digit ID
+        existing_session = Session.query.get(new_id)  # Check if it already exists
+        if not existing_session:
+            return new_id  # Return only if it's unique
 
 # Start a New Session and Invite Friends
 @session_bp.route('/start', methods=['POST'])
 def start_session():
     data = request.json
     host_name = data.get('host_name')
-    new_session = Session(host_name=host_name, status='pending')
+    new_session = Session(id=generate_unique_session_id(), host_name=host_name, status='pending')
+    print(new_session.id)
     db.session.add(new_session)
     db.session.commit()
 
@@ -106,7 +114,7 @@ def finish_selection():
 
     # Check if the user is a participant
     participant = SessionParticipant.query.filter_by(id=p_id).first()
-    if participant.session_id != session_id:
+    if participant.session_id != int(session_id):
         return jsonify({'message': 'Not part of this session'}), 403
 
     # Mark this user as done selecting movies
@@ -145,22 +153,27 @@ def finish_selection():
 
 @session_bp.route('/movies_in_pocket', methods=['GET'])
 def movies_in_pocket():
-    data = request.json
+    p_id = request.args.get('participant_id')  # Use request.args for query parameters
+    session_id = request.args.get('session_id')
 
-    p_id = data.get('participant_id')
-    session_id = data.get('session_id')
+    if not p_id or not session_id:
+        return jsonify({'message': 'Missing session_id or participant_id'}), 400
 
     # Check if the user is a participant in this session
     participant = SessionParticipant.query.filter_by(session_id=session_id, id=p_id).first()
     if not participant:
         return jsonify({'message': 'Not part of this session'}), 403
 
-    # Retrieve all movies in the session's movie pocket
-    movies = MoviePocket.query.filter_by(session_id=session_id).all()
+    # Retrieve unique movies in the session's movie pocket
+    unique_movies = (
+        db.session.query(MoviePocket.movie_id, func.min(MoviePocket.votes))
+        .filter(MoviePocket.session_id == session_id)
+        .group_by(MoviePocket.movie_id)
+        .all()
+    )
 
-    movie_list = [
-        {'movie_id': movie.movie_id, 'votes': movie.votes} for movie in movies
-    ]
+    # Prepare response
+    movie_list = [{'movie_id': movie_id, 'votes': votes} for movie_id, votes in unique_movies]
 
     return jsonify({'session_id': session_id, 'movies': movie_list})
 
@@ -223,7 +236,7 @@ def finish_voting():
 
         '''do not capture this'''
         return jsonify({
-            'message': f'All users finished voting for session {session_id}. Voting can start now.',
+            'message': f'All users finished voting for session {session_id}.',
             'total_participants': total_participants,
             'done_participants': done_participants
         })
