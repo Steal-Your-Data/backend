@@ -1,6 +1,7 @@
 from extentions import db
 from sqlalchemy.dialects.sqlite import TEXT
 import uuid
+import random
 
 class Movie(db.Model):
     __tablename__ = 'movies'  # Ensure the table name matches your CSV import
@@ -17,7 +18,7 @@ class Movie(db.Model):
 # Session Model for movie sessions
 class Session(db.Model):
     __tablename__ = 'session'
-    id = db.Column(TEXT, primary_key=True, default=lambda: str(uuid.uuid4()))  # Unique random ID
+    id = db.Column(TEXT, primary_key=True, default = random.randint(100000, 999999))  # Unique random ID
     host_name = db.Column(db.String(255), nullable=False)  # Regular string for host name
     status = db.Column(db.String(20), default='pending')  # pending, active, completed
 
