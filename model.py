@@ -18,7 +18,7 @@ class Movie(db.Model):
 # Session Model for movie sessions
 class Session(db.Model):
     __tablename__ = 'session'
-    id = db.Column(TEXT, primary_key=True, default = random.randint(100000, 999999))  # Unique random ID
+    id = db.Column(TEXT, primary_key=True, default = str(random.randint(100000, 999999)))  # Unique random ID
     host_name = db.Column(db.String(255), nullable=False)  # Regular string for host name
     status = db.Column(db.String(20), default='pending')  # pending, active, completed
 
