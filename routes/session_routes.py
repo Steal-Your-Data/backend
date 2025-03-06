@@ -156,26 +156,16 @@ def movies_in_pocket():
     if not participant:
         return jsonify({'message': 'Not part of this session'}), 403
 
-    # Retrieve unique movies in session's movie pocket
-    subquery = (
-        db.session.query(
-            MoviePocket.movie_id,
-            func.max(MoviePocket.votes).label("max_votes")
-        )
+    # Retrieve unique movies in the session's movie pocket
+    unique_movies = (
+        db.session.query(MoviePocket.movie_id, func.min(MoviePocket.votes))
         .filter(MoviePocket.session_id == session_id)
         .group_by(MoviePocket.movie_id)
-        .subquery()
-    )
-
-    unique_movies = (
-        db.session.query(MoviePocket)
-        .join(subquery, (MoviePocket.movie_id == subquery.c.movie_id) & (MoviePocket.votes == subquery.c.max_votes))
-        .filter(MoviePocket.session_id == session_id)
         .all()
     )
 
     # Prepare response
-    movie_list = [{'movie_id': movie.movie_id, 'votes': movie.votes} for movie in unique_movies]
+    movie_list = [{'movie_id': movie_id, 'votes': votes} for movie_id, votes in unique_movies]
 
     return jsonify({'session_id': session_id, 'movies': movie_list})
 
