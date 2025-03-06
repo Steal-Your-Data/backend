@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from extentions import db, socketio
 from model import Session, SessionParticipant, MoviePocket
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from sqlalchemy.sql import func
 
 session_bp = Blueprint('session', __name__)
 
@@ -106,7 +106,7 @@ def finish_selection():
 
     # Check if the user is a participant
     participant = SessionParticipant.query.filter_by(id=p_id).first()
-    if participant.session_id != session_id:
+    if participant.session_id != int(session_id):
         return jsonify({'message': 'Not part of this session'}), 403
 
     # Mark this user as done selecting movies
@@ -145,22 +145,37 @@ def finish_selection():
 
 @session_bp.route('/movies_in_pocket', methods=['GET'])
 def movies_in_pocket():
-    data = request.json
+    p_id = request.args.get('participant_id')  # Use request.args for query parameters
+    session_id = request.args.get('session_id')
 
-    p_id = data.get('participant_id')
-    session_id = data.get('session_id')
+    if not p_id or not session_id:
+        return jsonify({'message': 'Missing session_id or participant_id'}), 400
 
     # Check if the user is a participant in this session
     participant = SessionParticipant.query.filter_by(session_id=session_id, id=p_id).first()
     if not participant:
         return jsonify({'message': 'Not part of this session'}), 403
 
-    # Retrieve all movies in the session's movie pocket
-    movies = MoviePocket.query.filter_by(session_id=session_id).all()
+    # Retrieve unique movies in session's movie pocket
+    subquery = (
+        db.session.query(
+            MoviePocket.movie_id,
+            func.max(MoviePocket.votes).label("max_votes")
+        )
+        .filter(MoviePocket.session_id == session_id)
+        .group_by(MoviePocket.movie_id)
+        .subquery()
+    )
 
-    movie_list = [
-        {'movie_id': movie.movie_id, 'votes': movie.votes} for movie in movies
-    ]
+    unique_movies = (
+        db.session.query(MoviePocket)
+        .join(subquery, (MoviePocket.movie_id == subquery.c.movie_id) & (MoviePocket.votes == subquery.c.max_votes))
+        .filter(MoviePocket.session_id == session_id)
+        .all()
+    )
+
+    # Prepare response
+    movie_list = [{'movie_id': movie.movie_id, 'votes': movie.votes} for movie in unique_movies]
 
     return jsonify({'session_id': session_id, 'movies': movie_list})
 
@@ -223,7 +238,7 @@ def finish_voting():
 
         '''do not capture this'''
         return jsonify({
-            'message': f'All users finished voting for session {session_id}. Voting can start now.',
+            'message': f'All users finished voting for session {session_id}.',
             'total_participants': total_participants,
             'done_participants': done_participants
         })
