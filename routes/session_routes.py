@@ -2,16 +2,24 @@ from flask import Blueprint, request, jsonify
 from extentions import db, socketio
 from model import Session, SessionParticipant, MoviePocket
 from sqlalchemy.sql import func
+import random
 
 session_bp = Blueprint('session', __name__)
 
+def generate_unique_session_id():
+    while True:
+        new_id = str(random.randint(100000, 999999))  # Generate a 6-digit ID
+        existing_session = Session.query.get(new_id)  # Check if it already exists
+        if not existing_session:
+            return new_id  # Return only if it's unique
 
 # Start a New Session and Invite Friends
 @session_bp.route('/start', methods=['POST'])
 def start_session():
     data = request.json
     host_name = data.get('host_name')
-    new_session = Session(host_name=host_name, status='pending')
+    new_session = Session(id=generate_unique_session_id(), host_name=host_name, status='pending')
+    print(new_session.id)
     db.session.add(new_session)
     db.session.commit()
 
