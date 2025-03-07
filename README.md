@@ -96,6 +96,9 @@ Below are the new logs, once we hit the join_room button under Socket.IO Actions
 
 ![Alt text](new_output_for_joinroom.jpeg)
 
+## Updates 3/6/2025
+
+Updated the model.py to have string id instead and ensured randomly generating a new session id so duplicate error does not occur anymore
 
 
 
