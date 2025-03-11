@@ -10,7 +10,7 @@ def create_app():
     CORS(app)
 
     # Configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('APP_SQL', 'sqlite:////Users/terry/Desktop/CS506/movies.db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('APP_SQL', 'sqlite:////Users/rsamb/Downloads/backend/movies_v2.db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     app.config['SECRET_KEY'] = 'your_secret_key'

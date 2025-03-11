@@ -1,7 +1,7 @@
 # Movie Swipe App
 
 ## Introduction
-This is the final project for CS506. The app allows friends to **(`start a session/join a group`)** and use a Tinder-like swiping mechanism to vote for which movie to watch together. The goal is to make movie selection fun, interactive, and democratic among friends. ~~movies.db being used is put in the **google drive CS506** (`Project/Setup tables in Database/movies.db`)~~, ~~also since the **session_route_html_test is too large to push**, put in CS506 (`Project/session_route_html_test`)~~ , a new compiled version of all the html functionalities for testing use the name is called **(`complete_version_html_testing.html`)**, a new structured database will be in **google drive CS506** **(`Project/Setup tables in Database/movies_v2.db`)**
+This is the final project for CS506. The app allows friends to **(`start a session/join a group`)** and use a Tinder-like swiping mechanism to vote for which movie to watch together. The goal is to make movie selection fun, interactive, and democratic among friends. ~~movies.db being used is put in the **google drive CS506** (`Project/Setup tables in Database/movies.db`)~~, ~~also since the **session_route_html_test is too large to push**, put in CS506 (`Project/session_route_html_test`)~~ , a new compiled version of all the html functionalities for testing use the name is called **(`complete_version_html_testing.html`)**, a new structured database will be in **google drive CS506** **(`Project/Setup tables in Database/UPDATED DATABASE/movies_v2.db`)**
 
 ## Version Control
 - Python Version: Conda 3.10.0
@@ -96,6 +96,9 @@ Below are the new logs, once we hit the join_room button under Socket.IO Actions
 
 ![Alt text](new_output_for_joinroom.jpeg)
 
+## Updates 3/6/2025
+
+Updated the model.py to have string id instead and ensured randomly generating a new session id so duplicate error does not occur anymore
 
 
 

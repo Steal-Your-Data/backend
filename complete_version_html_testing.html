@@ -87,6 +87,31 @@
     <button onclick="finalMovie()">Get Final Movie</button>
   </div>
 
+  <h3>Movie Catalog</h3>
+  <div>
+      <button onclick="listAllMovies()">List All Movies</button>
+      <ul id="movie_list"></ul>
+  </div>
+
+  <script>
+      function listAllMovies() {
+          fetch('http://127.0.0.1:5000/movies/get_all_movies') // Adjust URL if necessary
+              .then(response => response.json())
+              .then(data => {
+                  let movieList = document.getElementById('movie_list');
+                  movieList.innerHTML = ''; // Clear previous results
+
+                  data.forEach(movie => {
+                      let listItem = document.createElement('li');
+                      listItem.textContent = `${movie.title} (${movie.release_date || 'N/A'}) - ${movie.genres}`;
+                      movieList.appendChild(listItem);
+                  });
+              })
+              .catch(error => console.error('Error fetching movies:', error));
+      }
+  </script>
+
+
   <h3>Logs</h3>
   <pre id="logs"></pre>
 
@@ -189,16 +214,19 @@
     function moviesInPocket() {
       const sessionId = document.getElementById("movies_in_pocket_session_id").value;
       const participantId = document.getElementById("movies_in_pocket_participant_id").value;
-      fetch("http://localhost:5000/session/movies_in_pocket", {
+
+      // Append session_id and participant_id as query parameters
+      const url = `http://localhost:5000/session/movies_in_pocket?session_id=${sessionId}&participant_id=${participantId}`;
+
+      fetch(url, {
         method: "GET",
-        headers: { "Content-Type": "application/json" },
-        // Note: Some browsers may not support a body in GET requests.
-        body: JSON.stringify({ session_id: sessionId, participant_id: participantId })
+        headers: { "Content-Type": "application/json" }
       })
       .then(response => response.json())
       .then(data => logMessage("Movies in Pocket: " + JSON.stringify(data)))
       .catch(error => logMessage("Error: " + error));
     }
+
 
     function vote() {
       const sessionId = document.getElementById("vote_session_id").value;
