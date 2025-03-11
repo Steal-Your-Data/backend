@@ -27,9 +27,10 @@ def search_movies():
     return jsonify(result)
 
 
-@movie_bp.route('/get_movie_info_by_id', methods=['GET'])
+@movie_bp.route('/get_movie_info_by_id', methods=['POST'])
 def Get_info_id():
-    movie_id = request.args.get('id')
+    data = request.json
+    movie_id = data.get('id')
 
     movie = Movie.query.filter_by(id=movie_id).first()
 
@@ -143,7 +144,7 @@ def filter_movies():
     return jsonify(result)
 
 
-@movie_bp.route('/get_movie_info_by_ids', methods=['GET'])
+@movie_bp.route('/get_movie_info_by_ids', methods=['POST'])
 def Get_info_ids():
     data = request.json
     movie_ids = data.get('ids')
@@ -164,3 +165,5 @@ def Get_info_ids():
         results.append(result)
 
     return jsonify(results)
+
+
