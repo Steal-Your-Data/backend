@@ -151,10 +151,11 @@ def finish_selection():
     })
 
 
-@session_bp.route('/movies_in_pocket', methods=['GET'])
+@session_bp.route('/movies_in_pocket', methods=['POST'])
 def movies_in_pocket():
-    p_id = request.args.get('participant_id')  # Use request.args for query parameters
-    session_id = request.args.get('session_id')
+    data = request.json
+    session_id = data.get('session_id')
+    p_id = data.get('participant_id')
 
     if not p_id or not session_id:
         return jsonify({'message': 'Missing session_id or participant_id'}), 400
@@ -248,8 +249,11 @@ def finish_voting():
     })
 
 # Retrieve the Final (Winning) Movie for the Session
-@session_bp.route('/final_movie/<string:session_id>', methods=['GET'])
-def final_movie(session_id):
+@session_bp.route('/final_movie', methods=['POST'])
+def final_movie():
+    data = request.json
+    session_id = data.get('session_id')
+
     winning_movie = MoviePocket.query.filter_by(session_id=session_id).order_by(MoviePocket.votes.desc()).first()
 
     if not winning_movie:
