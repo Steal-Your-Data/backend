@@ -1,4 +1,6 @@
 from flask import Blueprint, request, jsonify
+from flask_cors import cross_origin
+
 from model import Movie
 from extentions import db
 from sqlalchemy import extract
@@ -6,6 +8,7 @@ movie_bp = Blueprint('movies', __name__)
 
 
 @movie_bp.route('/search', methods=['GET'])
+@cross_origin()
 def search_movies():
     query = request.args.get('query', '').strip()
     if not query:
@@ -28,6 +31,7 @@ def search_movies():
 
 
 @movie_bp.route('/get_movie_info_by_id', methods=['POST'])
+@cross_origin()
 def Get_info_id():
     data = request.json
     movie_id = data.get('id')
@@ -48,6 +52,7 @@ def Get_info_id():
     return jsonify(result)
 
 @movie_bp.route('/get_all_movies', methods=['GET'])
+@cross_origin()
 def get_all_movies():
     movies = Movie.query.limit(10).all()  # REMOVE limit(10) to get all movies
     result = []
@@ -67,6 +72,7 @@ def get_all_movies():
     return jsonify(result)
 
 @movie_bp.route('/sort_movies', methods=['GET'])
+@cross_origin()
 def sort_movies():
     sort_by = request.args.get('sort_by', 'title')  # Default to sorting by title
     order = request.args.get('order', 'asc').lower()  # Default to ascending order
@@ -105,6 +111,7 @@ def sort_movies():
 
 
 @movie_bp.route('/filter_movies', methods=['GET'])
+@cross_origin()
 def filter_movies():
     genres = request.args.getlist('genres')  # Expect a list of genres
     language = request.args.get('language')
@@ -145,6 +152,7 @@ def filter_movies():
 
 
 @movie_bp.route('/get_movie_info_by_ids', methods=['POST'])
+@cross_origin()
 def Get_info_ids():
     data = request.json
     movie_ids = data.get('ids')

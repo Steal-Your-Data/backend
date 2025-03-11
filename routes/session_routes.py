@@ -1,4 +1,6 @@
 from flask import Blueprint, request, jsonify
+from flask_cors import cross_origin
+
 from extentions import db, socketio
 from model import Session, SessionParticipant, MoviePocket
 from sqlalchemy.sql import func
@@ -15,6 +17,7 @@ def generate_unique_session_id():
 
 # Start a New Session and Invite Friends
 @session_bp.route('/start', methods=['POST'])
+@cross_origin()
 def start_session():
     data = request.json
     host_name = data.get('host_name')
@@ -34,6 +37,7 @@ def start_session():
 
 
 @session_bp.route('/join', methods=['POST'])
+@cross_origin()
 def join_session():
     data = request.json
     session_id = data.get('session_id')
@@ -54,6 +58,7 @@ def join_session():
 
 
 @session_bp.route('/begin', methods=['POST'])
+@cross_origin()
 def Begin():
     data = request.json
     session_id = data.get('session_id')
@@ -65,6 +70,7 @@ def Begin():
 
 
 @session_bp.route('/list_join_participants', methods=['GET'])
+@cross_origin()
 def list_participants():
     session_id = request.args.get('session_id')  # Retrieve from query params
     if not session_id:
@@ -80,6 +86,7 @@ def list_participants():
 
 
 @session_bp.route('/add_movie', methods=['POST'])
+@cross_origin()
 def add_movie():
     data = request.json
     session_id = data.get('session_id')
@@ -107,6 +114,7 @@ def add_movie():
 
 
 @session_bp.route('/finish_selection', methods=['POST'])
+@cross_origin()
 def finish_selection():
     data = request.json
     session_id = data.get('session_id')
@@ -152,6 +160,7 @@ def finish_selection():
 
 
 @session_bp.route('/movies_in_pocket', methods=['POST'])
+@cross_origin()
 def movies_in_pocket():
     data = request.json
     session_id = data.get('session_id')
@@ -180,6 +189,7 @@ def movies_in_pocket():
 
 
 @session_bp.route('/vote', methods=['POST'])
+@cross_origin()
 def vote():
     data = request.json
     session_id = data.get('session_id')
@@ -204,6 +214,7 @@ def vote():
 
 
 @session_bp.route('/finish_voting', methods=['POST'])
+@cross_origin()
 def finish_voting():
     data = request.json
     session_id = data.get('session_id')
@@ -250,6 +261,7 @@ def finish_voting():
 
 # Retrieve the Final (Winning) Movie for the Session
 @session_bp.route('/final_movie', methods=['POST'])
+@cross_origin()
 def final_movie():
     data = request.json
     session_id = data.get('session_id')
