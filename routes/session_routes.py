@@ -54,7 +54,7 @@ def join_session():
         db.session.commit()
 
         # socketio.emit('message', {'session_id': session_id, 'name': join_name}, room=f'session_{session_id}')
-        return jsonify({'message': 'Join session successfully', 'participant_ID': new_session_participant.id})
+        return jsonify({'message': 'Join session successfully', 'participant_ID': new_session_participant.id, 'host_name': session.host_name})
 
 
 @session_bp.route('/begin', methods=['POST'])
@@ -277,3 +277,4 @@ def final_movie():
                   room=f'session_{session_id}')
 
     return jsonify({'movie_id': winning_movie.movie_id, 'votes': winning_movie.votes})
+
