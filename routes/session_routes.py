@@ -2,9 +2,10 @@ from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 
 from extentions import db, socketio
-from model import Session, SessionParticipant, MoviePocket
+from model import Session, SessionParticipant, MoviePocket, Movie
 from sqlalchemy.sql import func
 import random
+import hashlib
 
 session_bp = Blueprint('session', __name__)
 
@@ -266,15 +267,53 @@ def final_movie():
     data = request.json
     session_id = data.get('session_id')
 
-    winning_movie = MoviePocket.query.filter_by(session_id=session_id).order_by(MoviePocket.votes.desc()).first()
-
-    if not winning_movie:
+    # Determine the highest vote count in the session
+    max_votes = db.session.query(func.max(MoviePocket.votes)).filter(MoviePocket.session_id == session_id).scalar()
+    if max_votes is None:
         return jsonify({'message': 'No movie selected'}), 404
 
-    # Emit the winning movie to all session participants
+    # Retrieve all movies with the top vote count
+    top_movies = MoviePocket.query.filter_by(session_id=session_id, votes=max_votes).all()
+
+    # Sort the movies list by a stable attribute
+    top_movies = sorted(top_movies, key=lambda x: x.movie_id)
+
+    # Generate a hash, so the random tie breaker is deterministic across diff clients
+    hash_value = int(hashlib.md5(session_id.encode()).hexdigest(), 16)
+    winning_movie = top_movies[hash_value % len(top_movies)]
+
+    # Build movies_list using the full movie details
+    movies_list = []
+    for pocket in top_movies:
+        movie_obj = Movie.query.filter_by(id=pocket.movie_id).first()
+        if movie_obj:
+            movie_data = {
+                'id': movie_obj.id,
+                'title': movie_obj.title,
+                'genres': movie_obj.genres,
+                'original_language': movie_obj.original_language,
+                'overview': movie_obj.overview,
+                'popularity': movie_obj.popularity,
+                'release_date': movie_obj.release_date.isoformat() if movie_obj.release_date else None,
+                'poster_path': movie_obj.poster_path
+            }
+        else:
+            movie_data = {'id': pocket.movie_id}  # Fallback if movie not found
+        movies_list.append({
+            'movie': movie_data,
+            'votes': pocket.votes
+        })
+
+    # Emit the winning movie to session participants
     socketio.emit('final_movie_result',
                   {'session_id': session_id, 'movie_id': winning_movie.movie_id, 'votes': winning_movie.votes},
                   room=f'session_{session_id}')
 
-    return jsonify({'movie_id': winning_movie.movie_id, 'votes': winning_movie.votes})
+    # Return the response with movies_list containing full movie data
+    return jsonify({
+        'movie_id': winning_movie.movie_id,
+        'votes': winning_movie.votes,
+        'movies_list': movies_list
+    })
+
 
