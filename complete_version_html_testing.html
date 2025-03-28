@@ -93,30 +93,12 @@
       <ul id="movie_list"></ul>
   </div>
 
-  <script>
-      function listAllMovies() {
-          fetch('http://127.0.0.1:5000/movies/get_all_movies') // Adjust URL if necessary
-              .then(response => response.json())
-              .then(data => {
-                  let movieList = document.getElementById('movie_list');
-                  movieList.innerHTML = ''; // Clear previous results
-
-                  data.forEach(movie => {
-                      let listItem = document.createElement('li');
-                      listItem.textContent = `${movie.title} (${movie.release_date || 'N/A'}) - ${movie.genres}`;
-                      movieList.appendChild(listItem);
-                  });
-              })
-              .catch(error => console.error('Error fetching movies:', error));
-      }
-  </script>
-
-
   <h3>Logs</h3>
   <pre id="logs"></pre>
 
   <script>
-    const socket = io("http://localhost:5000");
+    // Use consistent backend URL and enable websocket transport
+    const socket = io("http://127.0.0.1:5000", { transports: ["websocket"] });
 
     function logMessage(message) {
       const logElement = document.getElementById("logs");
@@ -126,9 +108,10 @@
     // Session Control Functions
     function startSession() {
       const hostName = document.getElementById("host_name").value;
-      fetch("http://localhost:5000/session/start", {
+      fetch("http://127.0.0.1:5000/session/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        mode: "cors",
         body: JSON.stringify({ host_name: hostName })
       })
       .then(response => response.json())
@@ -139,9 +122,10 @@
     function joinSession() {
       const sessionId = document.getElementById("session_id_join").value;
       const joinName = document.getElementById("join_name").value;
-      fetch("http://localhost:5000/session/join", {
+      fetch("http://127.0.0.1:5000/session/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        mode: "cors",
         body: JSON.stringify({ session_id: sessionId, name: joinName })
       })
       .then(response => response.json())
@@ -151,9 +135,10 @@
 
     function beginSession() {
       const sessionId = document.getElementById("session_id_begin").value;
-      fetch("http://localhost:5000/session/begin", {
+      fetch("http://127.0.0.1:5000/session/begin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        mode: "cors",
         body: JSON.stringify({ session_id: sessionId })
       })
       .then(response => response.json())
@@ -163,7 +148,10 @@
 
     function listParticipants() {
       const sessionId = document.getElementById("session_id_list").value;
-      fetch(`http://localhost:5000/session/list_join_participants?session_id=${sessionId}`)
+      fetch(`http://127.0.0.1:5000/session/list_join_participants?session_id=${sessionId}`, {
+        method: "GET",
+        mode: "cors"
+      })
       .then(response => response.json())
       .then(data => logMessage("Participants: " + JSON.stringify(data)))
       .catch(error => logMessage("Error: " + error));
@@ -174,9 +162,10 @@
       const sessionId = document.getElementById("movie_session_id").value;
       const movieId = document.getElementById("movie_id").value;
       const participantId = document.getElementById("movie_participant_id").value;
-      fetch("http://localhost:5000/session/add_movie", {
+      fetch("http://127.0.0.1:5000/session/add_movie", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        mode: "cors",
         body: JSON.stringify({ session_id: sessionId, movie_id: movieId, participant_ID: participantId })
       })
       .then(response => response.json())
@@ -187,9 +176,10 @@
     function finishSelection() {
       const sessionId = document.getElementById("finish_session_id").value;
       const participantId = document.getElementById("finish_participant_id").value;
-      fetch("http://localhost:5000/session/finish_selection", {
+      fetch("http://127.0.0.1:5000/session/finish_selection", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        mode: "cors",
         body: JSON.stringify({ session_id: sessionId, participant_id: participantId })
       })
       .then(response => response.json())
@@ -214,27 +204,25 @@
     function moviesInPocket() {
       const sessionId = document.getElementById("movies_in_pocket_session_id").value;
       const participantId = document.getElementById("movies_in_pocket_participant_id").value;
-
-      // Append session_id and participant_id as query parameters
-      const url = `http://localhost:5000/session/movies_in_pocket?session_id=${sessionId}&participant_id=${participantId}`;
-
+      const url = `http://127.0.0.1:5000/session/movies_in_pocket?session_id=${sessionId}&participant_id=${participantId}`;
       fetch(url, {
         method: "GET",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        mode: "cors"
       })
       .then(response => response.json())
       .then(data => logMessage("Movies in Pocket: " + JSON.stringify(data)))
       .catch(error => logMessage("Error: " + error));
     }
 
-
     function vote() {
       const sessionId = document.getElementById("vote_session_id").value;
       const movieId = document.getElementById("vote_movie_id").value;
       const participantId = document.getElementById("vote_participant_id").value;
-      fetch("http://localhost:5000/session/vote", {
+      fetch("http://127.0.0.1:5000/session/vote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        mode: "cors",
         body: JSON.stringify({ session_id: sessionId, movie_id: movieId, participant_id: participantId })
       })
       .then(response => response.json())
@@ -245,9 +233,10 @@
     function finishVoting() {
       const sessionId = document.getElementById("finish_voting_session_id").value;
       const participantId = document.getElementById("finish_voting_participant_id").value;
-      fetch("http://localhost:5000/session/finish_voting", {
+      fetch("http://127.0.0.1:5000/session/finish_voting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        mode: "cors",
         body: JSON.stringify({ session_id: sessionId, participant_id: participantId })
       })
       .then(response => response.json())
@@ -257,8 +246,9 @@
 
     function finalMovie() {
       const sessionId = document.getElementById("final_movie_session_id").value;
-      fetch(`http://localhost:5000/session/final_movie/${sessionId}`, {
-        method: "GET"
+      fetch(`http://127.0.0.1:5000/session/final_movie/${sessionId}`, {
+        method: "GET",
+        mode: "cors"
       })
       .then(response => response.json())
       .then(data => logMessage("Final Movie: " + JSON.stringify(data)))

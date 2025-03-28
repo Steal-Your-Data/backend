@@ -30,8 +30,13 @@ def search_movies():
 @movie_bp.route('/get_movie_info_by_id', methods=['GET'])
 def Get_info_id():
     movie_id = request.args.get('id')
+    if not movie_id:
+        return jsonify({'error': 'Missing movie id parameter'}), 400
+
 
     movie = Movie.query.filter_by(id=movie_id).first()
+    if not movie:
+        return jsonify({'error': 'Movie not found'}), 404
 
     result = {
             'id': movie.id,
@@ -143,24 +148,107 @@ def filter_movies():
     return jsonify(result)
 
 
+# @movie_bp.route('/get_movie_info_by_ids', methods=['GET'])
+# def get_info_ids():
+#     data = request.json
+#     if data is None:
+#         return jsonify({'error': 'Missing movie id JSON'}), 400
+#
+#     if 'ids' not in data:
+#         return jsonify({'error': 'Missing "ids" key in JSON'}), 400
+#
+#
+#     movie_ids = data.get('ids')
+#
+#     if not movie_ids:
+#         return jsonify({'error': 'No movie ids provided'}), 400
+#     if len(movie_ids) == 0:
+#         return jsonify({'error': 'The movie ids list is empty'}), 200
+#
+#     results = []
+#     for movie_id in movie_ids:
+#         movie = Movie.query.filter_by(id=movie_id).first()
+#         if movie:
+#             result = {
+#                 'id': movie.id,
+#                 'title': movie.title,
+#                 'genres': movie.genres,
+#                 'original_language': movie.original_language,
+#                 'overview': movie.overview,
+#                 'popularity': movie.popularity,
+#                 'release_date': movie.release_date.isoformat() if movie.release_date else None,
+#                 'poster_path': movie.poster_path
+#             }
+#             results.append(result)
+#     if not results:
+#         # Option 1: return an empty list (status 200)
+#         # return jsonify([]), 200
+#
+#         # Option 2: return an error if none were found
+#         return jsonify({'error': 'No movies found for provided ids'}), 404
+#
+#     return jsonify(results)
+# @movie_bp.route('/get_movie_info_by_ids', methods=['GET'])
+# def get_info_ids():
+#     data = request.json(silent=True,force=True)
+#     if data is None:
+#         return jsonify({'error': 'Missing movie id json'}), 400
+#
+#     if 'ids' not in data:
+#         return jsonify({'error': 'Missing "ids" key in JSON'}), 400
+#
+#     movie_ids = data.get('ids')
+#     # If the list is empty, return an empty list with status 200
+#     if movie_ids == []:
+#         return jsonify([]), 200
+#
+#     results = []
+#     for movie_id in movie_ids:
+#         movie = Movie.query.filter_by(id=movie_id).first()
+#         # Only add movie info if the movie exists.
+#         if movie is not None:
+#             result = {
+#                 'id': movie.id,
+#                 'title': movie.title,
+#                 'genres': movie.genres,
+#                 'original_language': movie.original_language,
+#                 'overview': movie.overview,
+#                 'popularity': movie.popularity,
+#                 'release_date': movie.release_date.isoformat() if movie.release_date else None,
+#                 'poster_path': movie.poster_path
+#             }
+#             results.append(result)
+#     return jsonify(results)
+
+
 @movie_bp.route('/get_movie_info_by_ids', methods=['GET'])
-def Get_info_ids():
-    data = request.json
+def get_info_ids():
+    # Force JSON parsing for GET (even if no Content-Type is provided)
+    data = request.get_json(silent=True, force=True)
+    if not data:
+        return jsonify({'error': 'Missing movie id json'}), 400
+
+    if 'ids' not in data:
+        return jsonify({'error': 'Missing "ids" key in JSON'}), 400
+
     movie_ids = data.get('ids')
+    if movie_ids == []:
+        return jsonify([]), 200
+
     results = []
     for movie_id in movie_ids:
         movie = Movie.query.filter_by(id=movie_id).first()
-
-        result = {
-                'id': movie.id,
-                'title': movie.title,
-                'genres': movie.genres,
-                'original_language': movie.original_language,
-                'overview': movie.overview,
-                'popularity': movie.popularity,
-                'release_date': movie.release_date.isoformat() if movie.release_date else None,
-                'poster_path': movie.poster_path
-            }
-        results.append(result)
+        if movie is None:
+            continue  # Skip IDs that don't match any movie.
+        results.append({
+            'id': movie.id,
+            'title': movie.title,
+            'genres': movie.genres,
+            'original_language': movie.original_language,
+            'overview': movie.overview,
+            'popularity': movie.popularity,
+            'release_date': movie.release_date.isoformat() if movie.release_date else None,
+            'poster_path': movie.poster_path
+        })
 
     return jsonify(results)

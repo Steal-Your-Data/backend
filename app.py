@@ -10,7 +10,7 @@ def create_app():
     CORS(app)
 
     # Configuration
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////Users/rsamb/Downloads/backend/movies_v2.db"
+    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////Users/terry/PycharmProjects/backend/movies_v2.db"
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     app.config['SECRET_KEY'] = 'your_secret_key'
@@ -35,3 +35,4 @@ import socket_events
 if __name__ == "__main__":
     app = create_app()
     socketio.run(app, debug=True)
+    # socketio.run(app, host="0.0.0.0", debug=True)
