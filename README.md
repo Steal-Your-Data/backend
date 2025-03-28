@@ -101,6 +101,11 @@ Below are the new logs, once we hit the join_room button under Socket.IO Actions
 Updated the model.py to have string id instead and ensured randomly generating a new session id so duplicate error does not occur anymore
 
 
+## Updates 3/28/2025
+
+Updated the **folder (`test/`)** for doing basic unit testing for each API, bascially for **corner case** testing. This test aims to build a very decent fault-tolerance system. There are total of 50 test cases for testing the APIs' fault-tolerance ability. Based on the test cases, Modifying the APIs a little bit handling invalid input. But still using **(`complete_version_html_testing.html`)** for testing if each APIs is working good after modifying the current APIs. As a result, current APIs in this branch pass both **folder (`test/`)** and **(`complete_version_html_testing.html`)**. To simply run the unit test just in the backend folder and open terminal run **(`pytest`)** 
+
+
 
 ## Contribution Guidelines
 - Follow the Git branching workflow (`feature-branch`, `dev`, `main`).
