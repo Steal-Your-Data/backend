@@ -17,7 +17,7 @@ def handle_join_session_room(data):
 
     if session_id:
         join_room(f"session_{session_id}")
-        # print(f"User {name} joined session room session_{session_id}")
+        print(f"User {name} joined session room session_{session_id}")
         # Now broadcast that the user joined:
         socketio.emit("user_joined",
                       {"session_id": session_id, "name": names},

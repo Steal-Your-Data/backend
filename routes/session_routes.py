@@ -22,6 +22,10 @@ def generate_unique_session_id():
 def start_session():
     data = request.json
     host_name = data.get('host_name')
+
+    if not host_name:
+        return jsonify({'error': 'host_name is required'}), 400
+
     new_session = Session(id=generate_unique_session_id(), host_name=host_name, status='pending')
     print(new_session.id)
     db.session.add(new_session)
@@ -43,7 +47,15 @@ def join_session():
     data = request.json
     session_id = data.get('session_id')
     join_name = data.get('name')
+
+    if not session_id or not join_name:
+        return jsonify({'error': 'Both session_id and name are required'}), 400
+
     session = Session.query.filter_by(id=session_id).first()
+
+    if not session:
+        return jsonify({'error': 'Session does not exist'}), 404
+
     start = session.status
     if start == 'active':
         return jsonify({'message': 'Session has already started, no way for joining'})
@@ -63,7 +75,12 @@ def join_session():
 def Begin():
     data = request.json
     session_id = data.get('session_id')
+    if not session_id:
+        return jsonify({'error': 'session_id is required'}), 400
     session = Session.query.filter_by(id=session_id).first()
+    if not session:
+        return jsonify({'error': 'Session does not exist'}), 404
+
     session.status = 'active'
     db.session.commit()
     socketio.emit('session_begin', {'session_id': session_id}, room=f'session_{session_id}')
@@ -94,6 +111,10 @@ def add_movie():
     movie_id = data.get('movie_id')
     p_id = data.get('participant_ID')
 
+    # Check for missing required parameters
+    if not all([session_id, movie_id, p_id]):
+        return jsonify({'error': 'Missing session_id, movie_id, or participant_ID'}), 400
+
     # Check if the user is a participant
     participant = SessionParticipant.query.filter_by(id=p_id).first()
     if not participant:
@@ -121,9 +142,16 @@ def finish_selection():
     session_id = data.get('session_id')
     p_id = data.get('participant_id')
 
+    # Validate required parameters
+    if not session_id or not p_id:
+        return jsonify({'error': 'Missing session_id or participant_id'}), 400
+
     # Check if the user is a participant
     participant = SessionParticipant.query.filter_by(id=p_id).first()
-    if participant.session_id != int(session_id):
+    # print(participant.session_id == session_id)
+    # print(type(session_id))
+    # print(type(participant.session_id))
+    if not participant or str(participant.session_id) != str(session_id):
         return jsonify({'message': 'Not part of this session'}), 403
 
     # Mark this user as done selecting movies
@@ -197,6 +225,10 @@ def vote():
     movie_id = data.get('movie_id')
     p_id = data.get('participant_id')
 
+    # Validate all required parameters
+    if not session_id or not movie_id or not p_id:
+        return jsonify({'error': 'Missing session_id, movie_id, or participant_id'}), 400
+
     participant = SessionParticipant.query.filter_by(session_id=session_id, id=p_id).first()
     if not participant:
         return jsonify({'message': 'Not part of this session'}), 403
@@ -220,6 +252,10 @@ def finish_voting():
     data = request.json
     session_id = data.get('session_id')
     p_id = data.get('participant_id')
+
+    # Validate all required parameters
+    if not session_id or not p_id:
+        return jsonify({'error': 'Missing session_id, or participant_id'}), 400
 
     # Check if the user is a participant in this session
     participant = SessionParticipant.query.filter_by(id=p_id).first()

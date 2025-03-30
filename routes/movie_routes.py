@@ -33,10 +33,16 @@ def search_movies():
 @movie_bp.route('/get_movie_info_by_id', methods=['POST'])
 @cross_origin()
 def Get_info_id():
+    movie_id = request.args.get('id')
+    if not movie_id:
+        return jsonify({'error': 'Missing movie id parameter'}), 400
+
     data = request.json
     movie_id = data.get('id')
 
     movie = Movie.query.filter_by(id=movie_id).first()
+    if not movie:
+        return jsonify({'error': 'Movie not found'}), 404
 
     result = {
             'id': movie.id,
@@ -156,22 +162,23 @@ def filter_movies():
 def Get_info_ids():
     data = request.json
     movie_ids = data.get('ids')
+    if not movie_ids:
+        return jsonify([]), 200
+
     results = []
     for movie_id in movie_ids:
         movie = Movie.query.filter_by(id=movie_id).first()
-
-        result = {
-                'id': movie.id,
-                'title': movie.title,
-                'genres': movie.genres,
-                'original_language': movie.original_language,
-                'overview': movie.overview,
-                'popularity': movie.popularity,
-                'release_date': movie.release_date.isoformat() if movie.release_date else None,
-                'poster_path': movie.poster_path
-            }
-        results.append(result)
+        if movie is None:
+            continue  # Skip IDs that don't match any movie.
+        results.append({
+            'id': movie.id,
+            'title': movie.title,
+            'genres': movie.genres,
+            'original_language': movie.original_language,
+            'overview': movie.overview,
+            'popularity': movie.popularity,
+            'release_date': movie.release_date.isoformat() if movie.release_date else None,
+            'poster_path': movie.poster_path
+        })
 
     return jsonify(results)
-
-
