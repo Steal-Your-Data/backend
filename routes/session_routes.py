@@ -108,31 +108,31 @@ def list_participants():
 def add_movie():
     data = request.json
     session_id = data.get('session_id')
-    movie_id = data.get('movie_id')
+    movie_ids = data.get('movie_ids')
     p_id = data.get('participant_ID')
 
     # Check for missing required parameters
-    if not all([session_id, movie_id, p_id]):
-        return jsonify({'error': 'Missing session_id, movie_id, or participant_ID'}), 400
+    if not all([session_id, movie_ids, p_id]):
+        return jsonify({'error': 'Missing session_id, movie_ids, or participant_ID'}), 400
+
+    # Validate that movie_ids is a list
+    if not isinstance(movie_ids, list):
+        return jsonify({'error': 'movie_ids must be a list'}), 400
 
     # Check if the user is a participant
     participant = SessionParticipant.query.filter_by(id=p_id).first()
     if not participant:
         return jsonify({'message': 'Not part of this session'}), 403
-    '''
-    call it multiple times to add more movies
-    '''
-    movie_pocket = MoviePocket(session_id=session_id, movie_id=movie_id)
-    db.session.add(movie_pocket)
+
+    for movie_id in movie_ids:
+        movie_pocket = MoviePocket(session_id=session_id, movie_id=movie_id)
+        db.session.add(movie_pocket)
+
     db.session.commit()
-    '''
-    Now once a movie is added, it will broadcast to all the user in the session room
-    But You can definitely comment out the socketio to make it more secret
-    '''
     socketio.emit('movie_added',
-                  {'session_id': session_id, 'movie_id': movie_id},
+                  {'session_id': session_id, 'movie_ids': movie_ids},
                   room=f'session_{session_id}')
-    return jsonify({'message': 'Movie added to pocket'})
+    return jsonify({'message': 'Movies added to pocket'})
 
 
 @session_bp.route('/finish_selection', methods=['POST'])
