@@ -350,7 +350,6 @@ def final_movie():
         'movie_id': winning_movie.movie_id,
         'votes': winning_movie.votes,
         'movies_list': movies_list,
-        'winning_movie': winning_movie
     })
 
 
