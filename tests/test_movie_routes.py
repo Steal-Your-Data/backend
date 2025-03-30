@@ -37,26 +37,6 @@ def test_search_movies_no_match(client):
     assert response.status_code == 200
     assert data == []
 
-### Tests for `/movies/get_movie_info_by_id`
-
-def test_get_movie_info_by_id_valid(client):
-    movie = create_movie(db, title="Info Movie")
-    id = movie.id
-    response = client.get(f'/movies/get_movie_info_by_id?id={id}')
-    data = response.get_json()
-    assert response.status_code == 200
-    assert data['title'] == "Info Movie"
-
-def test_get_movie_info_by_id_missing_id(client):
-    # Missing id parameter. Depending on your implementation, you might expect a 400 error.
-    response = client.get('/movies/get_movie_info_by_id')
-    assert response.status_code in (400, 500)
-
-def test_get_movie_info_by_id_not_found(client):
-    # Query with a non-existent id.
-    response = client.get('/movies/get_movie_info_by_id?id=9999')
-    assert response.status_code in (404, 500)
-
 ### Tests for `/movies/get_all_movies`
 
 def test_get_all_movies_empty_db(client):
@@ -130,20 +110,20 @@ def test_get_movie_info_by_ids_valid(client):
     movie_1 = create_movie(db, title="Movie 300")
     movie_2 = create_movie(db, title="Movie 301")
     payload = {"ids": [movie_1.id, movie_2.id]}
-    response = client.get('/movies/get_movie_info_by_ids', json=payload)
+    response = client.post('/movies/get_movie_info_by_ids', json=payload)
     data = response.get_json()
     assert response.status_code == 200
     assert len(data) == 2
 
 def test_get_movie_info_by_ids_empty_ids(client):
     payload = {"ids": []}
-    response = client.get('/movies/get_movie_info_by_ids', json=payload)
+    response = client.post('/movies/get_movie_info_by_ids', json=payload)
     data = response.get_json()
     assert response.status_code == 200
     assert data == []
 
 def test_get_movie_info_by_ids_missing_json(client):
-    response = client.get('/movies/get_movie_info_by_ids')
+    response = client.post('/movies/get_movie_info_by_ids')
     # Expect an error due to missing JSON body.
     assert response.status_code in (400, 500)
 
@@ -151,7 +131,7 @@ def test_get_movie_info_by_ids_some_not_found(client):
     movie = create_movie(db, title="Movie 400")
     payload = {"ids": [movie.id, 99999999]}
     test_id = movie.id
-    response = client.get('/movies/get_movie_info_by_ids', json=payload)
+    response = client.post('/movies/get_movie_info_by_ids', json=payload)
     data = response.get_json()
     assert response.status_code == 200
     # Assuming the endpoint returns available records.

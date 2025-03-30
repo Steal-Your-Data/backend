@@ -115,15 +115,15 @@ def test_add_movie_valid(client):
     participant_id = session_data['participant_id']
     response = client.post('/session/add_movie', json={
         'session_id': session_id,
-        'movie_id': 1,
+        'movie_ids': [1],
         'participant_ID': participant_id
     })
     data = response.get_json()
     assert response.status_code == 200
-    assert 'Movie added to pocket' in data.get('message', '')
+    assert 'Movies added to pocket' in data.get('message', '')
 
 def test_add_movie_missing_parameters(client):
-    response = client.post('/session/add_movie', json={'session_id': '123456', 'movie_id': 1})
+    response = client.post('/session/add_movie', json={'session_id': '123456', 'movie_ids': [1]})
     assert response.status_code in (400, 500)
 
 def test_add_movie_unauthorized_participant(client):
@@ -131,7 +131,7 @@ def test_add_movie_unauthorized_participant(client):
     session_id = start_response.get_json()['session_id']
     response = client.post('/session/add_movie', json={
         'session_id': session_id,
-        'movie_id': 2,
+        'movie_ids': [2],
         'participant_ID': 9999  # invalid participant_ID
     })
     data = response.get_json()
@@ -177,16 +177,18 @@ def test_movies_in_pocket_valid(client):
     participant_id = session_data['participant_id']
     client.post('/session/add_movie', json={
         'session_id': session_id,
-        'movie_id': 3,
+        'movie_ids': [3],
         'participant_ID': participant_id
     })
-    response = client.get(f'/session/movies_in_pocket?session_id={session_id}&participant_id={participant_id}')
+    #response = client.get(f'/session/movies_in_pocket?session_id={session_id}&participant_id={participant_id}')
+    response = client.post('/session/movies_in_pocket', json = { 'session_id': session_id, 'participant_id':participant_id })
+
     data = response.get_json()
     assert response.status_code == 200
     assert 'movies' in data
 
 def test_movies_in_pocket_missing_parameters(client):
-    response = client.get('/session/movies_in_pocket?session_id=123456')
+    response = client.post('/session/movies_in_pocket', json={ })
     data = response.get_json()
     assert response.status_code == 400
     assert 'Missing session_id or participant_id' in data.get('message', '')
@@ -195,7 +197,9 @@ def test_movies_in_pocket_unauthorized(client):
     start_response = client.post('/session/start', json={'host_name': 'Nina'})
     session_data = start_response.get_json()
     session_id = session_data['session_id']
-    response = client.get(f'/session/movies_in_pocket?session_id={session_id}&participant_id=9999')
+    #response = client.get(f'/session/movies_in_pocket?session_id={session_id}&participant_id=9999')
+    response = client.post(f'/session/movies_in_pocket', json={'session_id': session_id, 'participant_id': 9999})
+
     data = response.get_json()
     assert response.status_code == 403
     assert 'Not part of this session' in data.get('message', '')
@@ -209,7 +213,7 @@ def test_vote_valid(client):
     participant_id = session_data['participant_id']
     client.post('/session/add_movie', json={
         'session_id': session_id,
-        'movie_id': 4,
+        'movie_ids': [4],
         'participant_ID': participant_id
     })
     response = client.post('/session/vote', json={
@@ -231,7 +235,7 @@ def test_vote_unauthorized(client):
     session_id = session_data['session_id']
     client.post('/session/add_movie', json={
         'session_id': session_id,
-        'movie_id': 5,
+        'movie_ids': [5],
         'participant_ID': session_data['participant_id']
     })
     response = client.post('/session/vote', json={
@@ -297,7 +301,7 @@ def test_final_movie_valid(client):
     participant_id = session_data['participant_id']
     client.post('/session/add_movie', json={
         'session_id': session_id,
-        'movie_id': 6,
+        'movie_ids': [6],
         'participant_ID': participant_id
     })
     client.post('/session/vote', json={
