@@ -30,32 +30,6 @@ def search_movies():
     return jsonify(result)
 
 
-@movie_bp.route('/get_movie_info_by_id', methods=['POST'])
-@cross_origin()
-def Get_info_id():
-    movie_id = request.args.get('id')
-    if not movie_id:
-        return jsonify({'error': 'Missing movie id parameter'}), 400
-
-    data = request.json
-    movie_id = data.get('id')
-
-    movie = Movie.query.filter_by(id=movie_id).first()
-    if not movie:
-        return jsonify({'error': 'Movie not found'}), 404
-
-    result = {
-            'id': movie.id,
-            'title': movie.title,
-            'genres': movie.genres,
-            'original_language': movie.original_language,
-            'overview': movie.overview,
-            'popularity': movie.popularity,
-            'release_date': movie.release_date.isoformat() if movie.release_date else None,
-            'poster_path': movie.poster_path
-        }
-
-    return jsonify(result)
 
 @movie_bp.route('/get_all_movies', methods=['GET'])
 @cross_origin()
@@ -157,12 +131,18 @@ def filter_movies():
     return jsonify(result)
 
 
-@movie_bp.route('/get_movie_info_by_ids', methods=['POST'])
-@cross_origin()
-def Get_info_ids():
-    data = request.json
+@movie_bp.route('/get_movie_info_by_ids', methods=['GET'])
+def get_info_ids():
+    # Force JSON parsing for GET (even if no Content-Type is provided)
+    data = request.get_json(silent=True, force=True)
+    if not data:
+        return jsonify({'error': 'Missing movie id json'}), 400
+
+    if 'ids' not in data:
+        return jsonify({'error': 'Missing "ids" key in JSON'}), 400
+
     movie_ids = data.get('ids')
-    if not movie_ids:
+    if movie_ids == []:
         return jsonify([]), 200
 
     results = []
