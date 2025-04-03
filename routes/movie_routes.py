@@ -170,7 +170,7 @@ def get_all_movies_V2():
     except ValueError:
         return jsonify({'error': 'Invalid page number. Page must be a positive integer.'}), 400
 
-    per_page = 10
+    per_page = 12
     offset = (page - 1) * per_page
 
     # Fetch the appropriate page of movies
@@ -254,7 +254,7 @@ def sort_movies_V2():
     except ValueError:
         return jsonify({'error': 'Invalid page number. Must be a positive integer.'}), 400
 
-    per_page = 10
+    per_page = 12
     offset = (page - 1) * per_page
 
     query = Movie.query.order_by(
@@ -335,7 +335,7 @@ def filter_movies_V2():
     except ValueError:
         return jsonify({'error': 'Invalid page number. Must be a positive integer.'}), 400
 
-    per_page = 10
+    per_page = 12
     offset = (page - 1) * per_page
 
     query = Movie.query
