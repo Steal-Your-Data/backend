@@ -1,5 +1,5 @@
 
-TMDB_api = "9233514416c6eabd3cac46cb3ee7d0ac"
+TMDB_api = "xxx"
 genre_dict = {
     28: "Action",
     12: "Adventure",
