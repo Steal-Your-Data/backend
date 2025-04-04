@@ -4,6 +4,7 @@ from extentions import db
 from sqlalchemy import extract
 from routes.Config import TMDB_api,genre_dict
 import requests
+from routes.Utils import get_filtered_now_playing
 movie_bp = Blueprint('movies', __name__)
 
 '''--------------------------------------Movie Search-----------------------------------------------------'''
@@ -303,6 +304,8 @@ def filter_movies():
     if release_year:
         query = query.filter(extract('year', Movie.release_date) == release_year)
 
+
+
     movies = query.all()
 
     result = [
@@ -327,6 +330,8 @@ def filter_movies_V2():
     genres = request.args.getlist('genres')  # Expect a list of genres
     language = request.args.get('language')
     release_year = request.args.get('release_year', type=int)
+    only_in_theater = True if request.args.get('only_in_theater') == 'yes' else False
+
 
     try:
         page = int(request.args.get('page', 1))
@@ -338,8 +343,28 @@ def filter_movies_V2():
     per_page = 12
     offset = (page - 1) * per_page
 
-    query = Movie.query
 
+    # If only_in_theater is True, fetch now-playing movies from TMDb via the helper function
+    if only_in_theater:
+        # from Utils import get_filtered_now_playing  # Import the helper function from Utils.py
+        now_playing_movies = get_filtered_now_playing(page, genres, language, release_year, per_page=12)
+        results = []
+        for movie in now_playing_movies:
+            movie_genre_names = [genre_dict.get(gid, "Unknown") for gid in movie.get('genre_ids', [])]
+            genres_str = '-'.join(movie_genre_names) if movie_genre_names else "Unknown"
+            results.append({
+                'id': movie.get('id'),
+                'title': movie.get('title'),
+                'genres': genres_str,
+                'original_language': movie.get('original_language'),
+                'overview': movie.get('overview'),
+                'popularity': movie.get('popularity'),
+                'release_date': movie.get('release_date'),
+                'poster_path': movie.get('poster_path')
+            })
+        return jsonify(results)
+
+    query = Movie.query
     # Filter by genres (matches at least one selected genre)
     if genres:
         genre_filters = [Movie.genres.ilike(f"%{genre}%") for genre in genres]
@@ -352,6 +377,8 @@ def filter_movies_V2():
     # Filter by release year
     if release_year:
         query = query.filter(extract('year', Movie.release_date) == release_year)
+
+
 
     movies = query.offset(offset).limit(per_page).all()
 
