@@ -143,7 +143,7 @@ def get_info_by_id_API():
 
 @movie_bp.route('/get_all_movies', methods=['GET'])
 def get_all_movies():
-    movies = Movie.query.limit(10).all()  # REMOVE limit(10) to get all movies
+    movies = Movie.query.limit(15).all()  # REMOVE limit(10) to get all movies
     result = []
 
     for movie in movies:
@@ -382,6 +382,103 @@ def filter_movies_V2():
 
     movies = query.offset(offset).limit(per_page).all()
 
+    result = [
+        {
+            'id': movie.id,
+            'title': movie.title,
+            'genres': movie.genres,
+            'original_language': movie.original_language,
+            'overview': movie.overview,
+            'popularity': movie.popularity,
+            'release_date': movie.release_date.isoformat() if movie.release_date else None,
+            'poster_path': movie.poster_path
+        }
+        for movie in movies
+    ]
+
+    return jsonify(result)
+
+
+@movie_bp.route('/filter_and_sort', methods=['GET'])
+def filter_and_sort():
+    genres = request.args.getlist('genres')  # Expect a list of genres
+    language = request.args.get('language')
+    release_year = request.args.get('release_year', type=int)
+    only_in_theater = True if request.args.get('only_in_theater') == 'yes' else False
+
+    sort_by = request.args.get('sort_by', 'release_date')
+    order = request.args.get('order', 'desc')
+
+    try:
+        page = int(request.args.get('page', 1))
+        if page < 1:
+            raise ValueError
+    except ValueError:
+        return jsonify({'error': 'Invalid page number. Must be a positive integer.'}), 400
+
+    per_page = 12
+    offset = (page - 1) * per_page
+
+
+    # If only_in_theater is True, fetch now-playing movies from TMDb via the helper function
+    if only_in_theater:
+        # from Utils import get_filtered_now_playing  # Import the helper function from Utils.py
+        now_playing_movies = get_filtered_now_playing(page, genres, language, release_year, per_page=12)
+        results = []
+        for movie in now_playing_movies:
+            movie_genre_names = [genre_dict.get(gid, "Unknown") for gid in movie.get('genre_ids', [])]
+            genres_str = '-'.join(movie_genre_names) if movie_genre_names else "Unknown"
+            results.append({
+                'id': movie.get('id'),
+                'title': movie.get('title'),
+                'genres': genres_str,
+                'original_language': movie.get('original_language'),
+                'overview': movie.get('overview'),
+                'popularity': movie.get('popularity'),
+                'release_date': movie.get('release_date'),
+                'poster_path': movie.get('poster_path')
+            })
+        return jsonify(results)
+
+    query = Movie.query
+    # Filter by genres (matches at least one selected genre)
+    if genres:
+        genre_filters = [Movie.genres.ilike(f"%{genre}%") for genre in genres]
+        query = query.filter(db.or_(*genre_filters))
+
+    # Filter by language
+    if language:
+        query = query.filter(Movie.original_language == language)
+
+    # Filter by release year
+    if release_year:
+        query = query.filter(extract('year', Movie.release_date) == release_year)
+
+    # Sorting logic
+    if sort_by:
+        if sort_by == "popularity":
+            sort_column = Movie.popularity
+        elif sort_by == "title":
+            sort_column = Movie.title
+        elif sort_by == "release_date":
+            sort_column = Movie.release_date
+        else:
+            return jsonify({'error': 'Invalid sort_by parameter. Must be one of: popularity, title, release_date.'}), 400
+
+        if order == "asc":
+            query = query.order_by(sort_column.asc())
+        elif order == "desc":
+            query = query.order_by(sort_column.desc())
+        else:
+            return jsonify({'error': 'Invalid order parameter. Must be one of: asc, desc.'}), 400
+    else:
+        # If no sort_by is provided, you can return an error or default to a field like title.
+        query = query.order_by(Movie.title.asc())
+
+    # Paginate the results
+    movies = query.offset(offset).limit(per_page).all()
+
+    # Prepare the results to be returned
     result = [
         {
             'id': movie.id,
