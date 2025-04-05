@@ -105,7 +105,47 @@ Updated the model.py to have string id instead and ensured randomly generating a
 
 Updated the **folder (`test/`)** for doing basic unit testing for each API, bascially for **corner case** testing. This test aims to build a very decent fault-tolerance system. There are total of 50 test cases for testing the APIs' fault-tolerance ability. Based on the test cases, Modifying the APIs a little bit handling invalid input. But still using **(`complete_version_html_testing.html`)** for testing if each APIs is working good after modifying the current APIs. As a result, current APIs in this branch pass both **folder (`test/`)** and **(`complete_version_html_testing.html`)**. To simply run the unit test just in the backend folder and open terminal run **(`pytest`)** 
 
+## Updates 4/2/2025
 
+
+Finished updating the movie_routes.py below are the new routes I added to the repo:
+
+
+
+
+(`/search_API`):Searches movies via TMDb API.
+(`/get_movie_info_by_id_API`): Fetches single movie info by ID via TMDb API.
+(`/get_movie_info_by_ids_API`): Fetches multiple movie infos by ID list via TMDb API.
+(`/get_all_movies_V2`): Returns 10 movies per page from local DB.
+(`/sort_movies_V2`): Returns sorted movies (by title, popularity, release_date) with pagination(pages).
+(`/filter_movies_V2`): Returns filtered movies (by genres, language, release_year) with pagination(pages).
+
+the routes from **bullet 4** to **bullet 6** are confirmed with Rushil yesterday night to add that to the movie_routes.py. Since we both think it is a little bit weird if we retrieve all the movies at once to the frontend, we stick to every time we only retrieves 10 movies, once user scroll down it will load more movies by calling this function with +1 pages.  
+
+from **bullet 1** to **bullet 3** are the API we have plan to use in the final version of Cinematch.  after yesterday's discussion with Rushil, which directly call from the TMBD API to get the movie info. with the same I/O as the corresponding API Before.  
+
+
+## Updates 4/3/2025
+
+### Only in Theater Filtering in `filter_movies_V2`
+
+We have enhanced the `/movies/filter_movies_V2` route by adding the `only_in_theater` option. With this update, the API can now return movies that are currently playing in US cinemas.
+
+#### Overview
+
+- **Route:** `/movies/filter_movies_V2`
+- **Feature:** When the query parameter `only_in_theater=yes` is provided, the route will fetch movies that are now playing in theaters from TMDb.
+- **Filters:** You can still filter by `genres`, `language`, and `release_year`.
+- **Pagination:** The results are paginated. For example:
+  - `page=1` returns the first 12 matching movies,
+  - `page=2` returns movies 13–24,
+  - and so on.
+
+#### Example API Call
+
+```http
+GET http://127.0.0.1:5000/movies/filter_movies_V2?genres=Action&genres=Drama&page=9&language=en&only_in_theater=yes
+```
 
 ## Contribution Guidelines
 - Follow the Git branching workflow (`feature-branch`, `dev`, `main`).
