@@ -406,8 +406,15 @@ def filter_and_sort():
     release_year = request.args.get('release_year', type=int)
     only_in_theater = True if request.args.get('only_in_theater') == 'yes' else False
 
-    sort_by = request.args.get('sort_by', 'release_date')
-    order = request.args.get('order', 'desc')
+    sort_by = request.args.get('sort_by')
+    order = request.args.get('order')
+
+    if not sort_by:
+        sort_by = 'release_date'
+    
+    if not order:
+        order = 'desc'  # Default to ascending order if not specified
+        
 
     try:
         page = int(request.args.get('page', 1))
@@ -464,6 +471,7 @@ def filter_and_sort():
             sort_column = Movie.release_date
         else:
             return jsonify({'error': 'Invalid sort_by parameter. Must be one of: popularity, title, release_date.'}), 400
+        
 
         if order == "asc":
             query = query.order_by(sort_column.asc())
