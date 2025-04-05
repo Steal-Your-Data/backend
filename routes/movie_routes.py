@@ -381,7 +381,8 @@ def filter_movies():
 #     return jsonify(results)
 
 
-@movie_bp.route('/get_movie_info_by_ids', methods=['GET'])
+@movie_bp.route('/get_movie_info_by_ids', methods=['POST'])
+@cross_origin()
 def get_info_ids():
     # Force JSON parsing for GET (even if no Content-Type is provided)
     data = request.get_json(silent=True, force=True)
