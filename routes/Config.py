@@ -1,5 +1,6 @@
+import os
 
-TMDB_api = "xxx"
+TMDB_api = os.environ.get('TMDB_KEY', 'xxxx')
 genre_dict = {
     28: "Action",
     12: "Adventure",
