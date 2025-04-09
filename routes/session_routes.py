@@ -172,14 +172,21 @@ def finish_selection():
 
     # Check if all participants are done selecting
     if done_participants == total_participants:
-        socketio.emit('selection_complete', {'session_id': session_id}, room=f'session_{session_id}')
-
-        '''do not capture this'''
-        return jsonify({
-            'message': f'All users finished selecting for session {session_id}. Voting can start now.',
-            'total_participants': total_participants,
-            'done_participants': done_participants
-        })
+        movies = MoviePocket.query.filter_by(session_id=session_id).all()
+        print(movies)
+        if len(movies) == 0:
+            session = Session.query.filter_by(id=session_id).first()
+            session.status = 'completed'
+            db.session.commit()
+            socketio.emit('No_Movies', {'session_id': session_id}, room=f'session_{session_id}')
+        else:
+            socketio.emit('selection_complete', {'session_id': session_id}, room=f'session_{session_id}')
+            '''do not capture this'''
+            return jsonify({
+                'message': f'All users finished selecting for session {session_id}. Voting can start now.',
+                'total_participants': total_participants,
+                'done_participants': done_participants
+            })
 
     return jsonify({
         'message': 'You have finished selecting. Waiting for others.',

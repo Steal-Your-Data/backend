@@ -299,6 +299,11 @@
     socket.on("final_movie_result", function(data) {
       logMessage("Final Movie Result (Socket): " + JSON.stringify(data));
     });
+
+    socket.on("No_Movies", function(data) {
+      logMessage("No Movies (Socket): " + JSON.stringify(data));
+    });
+
   </script>
 </body>
 </html>
