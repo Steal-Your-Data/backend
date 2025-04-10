@@ -326,8 +326,9 @@ def final_movie():
     winning_movie = top_movies[hash_value % len(top_movies)]
 
     # Build movies_list using the full movie details
+    all_movies = MoviePocket.query.filter_by(session_id=session_id).all()
     movies_list = []
-    for pocket in top_movies:
+    for pocket in all_movies:
         movie_obj = Movie.query.filter_by(id=pocket.movie_id).first()
         if movie_obj:
             movie_data = {
@@ -352,7 +353,6 @@ def final_movie():
                   {'session_id': session_id, 'movie_id': winning_movie.movie_id, 'votes': winning_movie.votes},
                   room=f'session_{session_id}')
 
-    # Return the response with movies_list containing full movie data
     return jsonify({
         'movie_id': winning_movie.movie_id,
         'votes': winning_movie.votes,
