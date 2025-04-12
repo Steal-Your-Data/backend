@@ -7,6 +7,7 @@ from sqlalchemy import extract
 from routes.Config import TMDB_api,genre_dict
 import requests
 from routes.Utils import get_filtered_now_playing
+
 movie_bp = Blueprint('movies', __name__)
 
 '''--------------------------------------Movie Search-----------------------------------------------------'''
@@ -172,6 +173,46 @@ def get_all_movies_V2():
         })
 
     return jsonify(result)
+
+'''Get all movies by API'''
+# def get_all_movies_API():
+@movie_bp.route('/get_all_movies_API', methods=['GET'])
+def get_all_movies_API():
+    page = request.args.get('page', 1, type=int)
+    tmdb_url = "https://api.themoviedb.org/3/movie/popular"
+    params = {
+        'api_key': TMDB_api,
+        'language': 'en-US',
+        'page': page
+    }
+
+    try:
+        response = requests.get(tmdb_url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        movies = data.get('results', [])
+
+        result = []
+        for movie in movies:
+            genre_names = [genre_dict.get(gid, "Unknown") for gid in movie.get('genre_ids', [])]
+            genres_str = '-'.join(genre_names) if genre_names else "Unknown"
+            result.append({
+                'id': movie.get('id'),
+                'title': movie.get('title'),
+                'genres': genres_str,
+                'original_language': movie.get('original_language'),
+                'overview': movie.get('overview'),
+                'popularity': movie.get('popularity'),
+                'release_date': movie.get('release_date'),
+                'poster_path': movie.get('poster_path')
+            })
+            if len(result) == 12:
+                break
+
+        return jsonify(result)
+
+    except requests.RequestException as e:
+        return jsonify({'error': str(e)}), 500
 
 
 
