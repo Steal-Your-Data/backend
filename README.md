@@ -111,8 +111,6 @@ Updated the **folder (`test/`)** for doing basic unit testing for each API, basc
 Finished updating the movie_routes.py below are the new routes I added to the repo:
 
 
-
-
 (`/search_API`):Searches movies via TMDb API.
 (`/get_movie_info_by_id_API`): Fetches single movie info by ID via TMDb API.
 (`/get_movie_info_by_ids_API`): Fetches multiple movie infos by ID list via TMDb API.
@@ -146,6 +144,14 @@ We have enhanced the `/movies/filter_movies_V2` route by adding the `only_in_the
 ```http
 GET http://127.0.0.1:5000/movies/filter_movies_V2?genres=Action&genres=Drama&page=9&language=en&only_in_theater=yes
 ```
+
+
+## UPdates 4/11/2025
+
+As discuss with Integration team members, We have a agreement on building a get_all_movies function by calling the API instead of 
+Local data base, now the function is complete and can be found in movies_routes.py the function name is called (`@movie_bp.route('/get_all_movies_API', methods=['GET'])
+def get_all_movies_API():`) same I/O as get_all_movies_V2
+
 
 ## Contribution Guidelines
 - Follow the Git branching workflow (`feature-branch`, `dev`, `main`).
