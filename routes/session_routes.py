@@ -86,6 +86,39 @@ def Begin():
     socketio.emit('session_begin', {'session_id': session_id}, room=f'session_{session_id}')
     return jsonify({'message': f'session {session_id} start'})
 
+@session_bp.route('/leave', methods=['POST'])
+@cross_origin()
+def leave_session():
+    data = request.json
+    session_id = data.get('session_id')
+    participant_id = data.get('participant_id')
+
+    if not session_id or not participant_id:
+        return jsonify({'error': 'Missing session_id or participant_id'}), 400
+
+    session = Session.query.filter_by(id=session_id).first()
+    if not session:
+        return jsonify({'error': 'Session does not exist'}), 404
+
+    participant = SessionParticipant.query.filter_by(id=participant_id, session_id=session_id).first()
+    if not participant:
+        return jsonify({'error': 'Participant not found in this session'}), 404
+
+    if participant.name == session.host_name:
+
+        socketio.emit('session_disbanded', {'session_id': session_id, 'host_name': session.host_name}, room=f'session_{session_id}')
+
+        SessionParticipant.query.filter_by(session_id=session_id).delete()
+
+        db.session.delete(session)
+        db.session.commit()
+        return jsonify({'message': 'Session disbanded by host'})
+    else:
+        db.session.delete(participant)
+        db.session.commit()
+
+        socketio.emit('participant_left', {'session_id': session_id, 'participant_id': participant_id}, room=f'session_{session_id}')
+        return jsonify({'message': 'You have left the session'})
 
 @session_bp.route('/list_join_participants', methods=['GET'])
 @cross_origin()
