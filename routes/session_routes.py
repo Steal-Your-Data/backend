@@ -117,7 +117,7 @@ def leave_session():
         db.session.delete(participant)
         db.session.commit()
 
-        socketio.emit('participant_left', {'session_id': session_id, 'participant_id': participant_id}, room=f'session_{session_id}')
+        socketio.emit('participant_left', {'session_id': session_id, 'participant_id': participant_id, 'participant_name': participant.name}, room=f'session_{session_id}')
         return jsonify({'message': 'You have left the session'})
 
 @session_bp.route('/list_join_participants', methods=['GET'])
