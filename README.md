@@ -146,7 +146,7 @@ GET http://127.0.0.1:5000/movies/filter_movies_V2?genres=Action&genres=Drama&pag
 ```
 
 
-## UPdates 4/11/2025
+## Updates 4/11/2025
 
 As discuss with Integration team members, We have a agreement on building a get_all_movies function by calling the API instead of 
 Local data base, now the function is complete and can be found in movies_routes.py the function name is called (`@movie_bp.route('/get_all_movies_API', methods=['GET'])
