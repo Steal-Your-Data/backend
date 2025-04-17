@@ -58,9 +58,9 @@ def join_session():
 
     start = session.status
     if start == 'active':
-        return jsonify({'message': 'Session has already started, no way for joining'})
+        return jsonify({'error': 'Session has already started, no way for joining'})
     elif start == 'completed':
-        return jsonify({'message': 'Session has already finished, no way for joining'})
+        return jsonify({'error': 'Session has already finished, no way for joining'})
     else:
         new_session_participant = SessionParticipant(session_id=session_id, name=join_name)
         db.session.add(new_session_participant)
