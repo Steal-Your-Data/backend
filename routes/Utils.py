@@ -1,4 +1,4 @@
-from routes.Config import TMDB_api, genre_dict
+from routes.Config import TMDB_api, genre_dict, genre_dict_rev
 import requests
 
 def get_filtered_now_playing(page, genres, language, release_year, per_page=12):
@@ -57,3 +57,43 @@ def get_filtered_now_playing(page, genres, language, release_year, per_page=12):
     start_index = (page - 1) * per_page
     end_index = start_index + per_page
     return filtered_results[start_index:end_index]
+
+
+def get_filtered(page, genres, language, release_year, sort_by='popularity', order='desc', per_page=12):
+    """
+    Fetch movies from TMDb Discover API and map genres back to names.
+    """
+    # Map genre names to IDs
+    genre_ids = [str(genre_dict_rev[g.strip()]) for g in genres if g.strip() in genre_dict_rev]
+    # Build request parameters
+    params = {
+        'api_key': TMDB_api,
+        'with_genres': ','.join(genre_ids),
+        'with_genres_operator': 'or',
+        'sort_by': f"{sort_by}.{order}",
+        'page': page
+    }
+    if release_year:
+        params['primary_release_year'] = release_year
+    if language:
+        params['with_original_language'] = language
+
+    response = requests.get("https://api.themoviedb.org/3/discover/movie", params=params)
+    response.raise_for_status()
+    data = response.json()
+
+    formatted_results = []
+    for movie in data.get('results', [])[:per_page]:
+        movie_genre_names = [genre_dict.get(gid, 'Unknown') for gid in movie.get('genre_ids', [])]
+        genres_str = '-'.join(movie_genre_names) if movie_genre_names else 'Unknown'
+        formatted_results.append({
+            'id': movie.get('id'),
+            'title': movie.get('title'),
+            'genres': genres_str,
+            'original_language': movie.get('original_language'),
+            'overview': movie.get('overview'),
+            'popularity': movie.get('popularity'),
+            'release_date': movie.get('release_date'),
+            'poster_path': movie.get('poster_path')
+        })
+    return formatted_results
