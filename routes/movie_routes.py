@@ -6,7 +6,7 @@ from extentions import db
 from sqlalchemy import extract
 from routes.Config import TMDB_api,genre_dict
 import requests
-from routes.Utils import get_filtered_now_playing
+from routes.Utils import get_filtered_now_playing, get_filtered
 
 movie_bp = Blueprint('movies', __name__)
 
@@ -581,7 +581,6 @@ def filter_and_sort():
 
     if not order:
         order = 'desc'  # Default to ascending order if not specified
-
     try:
         page = int(request.args.get('page', 1))
         if page < 1:
@@ -590,7 +589,7 @@ def filter_and_sort():
         return jsonify({'error': 'Invalid page number. Must be a positive integer.'}), 400
 
     per_page = 12
-    offset = (page - 1) * per_page
+    # offset = (page - 1) * per_page
 
     # If only_in_theater is True, fetch now-playing movies from TMDb via the helper function
     if only_in_theater:
@@ -612,58 +611,6 @@ def filter_and_sort():
             })
         return jsonify(results)
 
-    query = Movie.query
-    # Filter by genres (matches at least one selected genre)
-    if genres:
-        genre_filters = [Movie.genres.ilike(f"%{genre}%") for genre in genres]
-        query = query.filter(db.or_(*genre_filters))
-
-    # Filter by language
-    if language:
-        query = query.filter(Movie.original_language == language)
-
-    # Filter by release year
-    if release_year:
-        query = query.filter(extract('year', Movie.release_date) == release_year)
-
-    # Sorting logic
-    if sort_by:
-        if sort_by == "popularity":
-            sort_column = Movie.popularity
-        elif sort_by == "title":
-            sort_column = Movie.title
-        elif sort_by == "release_date":
-            sort_column = Movie.release_date
-        else:
-            return jsonify(
-                {'error': 'Invalid sort_by parameter. Must be one of: popularity, title, release_date.'}), 400
-
-        if order == "asc":
-            query = query.order_by(sort_column.asc())
-        elif order == "desc":
-            query = query.order_by(sort_column.desc())
-        else:
-            return jsonify({'error': 'Invalid order parameter. Must be one of: asc, desc.'}), 400
-    else:
-        # If no sort_by is provided, you can return an error or default to a field like title.
-        query = query.order_by(Movie.title.asc())
-
-    # Paginate the results
-    movies = query.offset(offset).limit(per_page).all()
-
-    # Prepare the results to be returned
-    result = [
-        {
-            'id': movie.id,
-            'title': movie.title,
-            'genres': movie.genres,
-            'original_language': movie.original_language,
-            'overview': movie.overview,
-            'popularity': movie.popularity,
-            'release_date': movie.release_date.isoformat() if movie.release_date else None,
-            'poster_path': movie.poster_path
-        }
-        for movie in movies
-    ]
-
-    return jsonify(result)
+    # Otherwise use TMDb Discover API for filtering, sorting, and formatting
+    filtered_movies = get_filtered(page, genres, language, release_year, sort_by, order, per_page=12)
+    return jsonify(filtered_movies)
