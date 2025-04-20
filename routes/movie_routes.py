@@ -456,11 +456,20 @@ def get_info_ids():
     return jsonify(results)
 
 '''get movie informations from API instead of local database'''
-@movie_bp.route('/get_movie_info_by_ids_API', methods=['GET'])
+@movie_bp.route('/get_movie_info_by_ids_API', methods=['POST'])
 def get_info_ids_API():
-    ids = request.args.getlist('ids')
-    if not ids:
-        return jsonify({'error': 'Missing movie id parameter'}), 400
+
+    data = request.get_json(silent=True, force=True)
+    if not data:
+        return jsonify({'error': 'Missing movie id json'}), 400
+
+    if 'ids' not in data:
+        return jsonify({'error': 'Missing "ids" key in JSON'}), 400
+
+    ids = data.get('ids')
+    if ids == []:
+        return jsonify([]), 200
+    
     results = []
     for movie_id in ids:
         tmdb_url = f"https://api.themoviedb.org/3/movie/{movie_id}"
