@@ -6,7 +6,7 @@ from extentions import db
 from sqlalchemy import extract
 from routes.Config import TMDB_api,genre_dict
 import requests
-from routes.Utils import get_filtered_now_playing, get_filtered
+from routes.Utils import get_filtered_now_playing, get_filtered, discover_movies
 
 movie_bp = Blueprint('movies', __name__)
 
@@ -37,6 +37,8 @@ def search_movies():
 @movie_bp.route('/search_API', methods=['GET'])
 def search_movies_API():
     query = request.args.get('query', '').strip()
+    page  = request.args.get('page', 1, type=int)  # ← new: page number (defaults to 1)
+
     if not query:
         return jsonify([])
 
@@ -45,29 +47,31 @@ def search_movies_API():
         'api_key': TMDB_api,
         'query': query,
         'language': 'en-US',
-        'page': 1,
+        'page': page,           # ← new: pass the page through
         'include_adult': False
     }
 
     try:
         response = requests.get(tmdb_search_url, params=params)
         response.raise_for_status()
-        data = response.json()
-        movies = data.get('results', [])
+        data    = response.json()
+        movies  = data.get('results', [])
 
         result = []
-        for movie in movies[:10]:  # Limit to 10 results
-            genre_names = [genre_dict.get(genre_id, "Unknown") for genre_id in movie.get('genre_ids', [])]
-            genres_str = '-'.join(genre_names) if genre_names else "Unknown"
+        for movie in movies:    # ← no artificial 10‑item cap
+            genre_names = [
+                genre_dict.get(gid, "Unknown")
+                for gid in movie.get('genre_ids', [])
+            ]
             result.append({
-                'id': movie.get('id'),
-                'title': movie.get('title'),
-                'genres': genres_str,
+                'id'               : movie.get('id'),
+                'title'            : movie.get('title'),
+                'genres'           : '-'.join(genre_names) or "Unknown",
                 'original_language': movie.get('original_language'),
-                'overview': movie.get('overview'),
-                'popularity': movie.get('popularity'),
-                'release_date': movie.get('release_date'),
-                'poster_path': movie.get('poster_path')
+                'overview'         : movie.get('overview'),
+                'popularity'       : movie.get('popularity'),
+                'release_date'     : movie.get('release_date'),
+                'poster_path'      : movie.get('poster_path')
             })
 
         return jsonify(result)
@@ -623,3 +627,57 @@ def filter_and_sort():
     # Otherwise use TMDb Discover API for filtering, sorting, and formatting
     filtered_movies = get_filtered(page, genres, language, release_year, sort_by, order, per_page=12)
     return jsonify(filtered_movies)
+
+@movie_bp.route("/filter_and_sort_V2", methods=["GET"])
+def filter_and_sort_V2():
+    # ------------------------------------------------------------------ query params
+    genres = request.args.getlist("genres")
+    language = request.args.get("language")
+    only_in_theater = request.args.get("only_in_theater") == "yes"
+
+    sort_by = request.args.get("sort_by", "release_date")
+    order = request.args.get("order", "desc")
+
+    # year‑range
+    release_year_min = request.args.get("release_year_min", type=int)
+    release_year_max = request.args.get("release_year_max", type=int)
+
+    # validate / normalise year‑range ------------------------------------------
+    year_range = None
+    if release_year_min is not None or release_year_max is not None:
+        # if one bound missing, assume a single‑year range
+        if release_year_min is None:
+            release_year_min = release_year_max
+        if release_year_max is None:
+            release_year_max = release_year_min
+
+        if release_year_min > release_year_max:
+            return jsonify({
+                "error": "`release_year_min` cannot be greater than `release_year_max`."
+            }), 400
+
+        year_range = (release_year_min, release_year_max)
+
+    # page ---------------------------------------------------------------------
+    try:
+        page = int(request.args.get("page", 1))
+        if page < 1:
+            raise ValueError
+    except ValueError:
+        return jsonify({"error": "Invalid page number. Must be a positive integer."}), 400
+
+    # ------------------------------------------------------------------ TMDb call
+    try:
+        payload = discover_movies(
+            page=page,
+            genres=genres,
+            language=language,
+            year_range=year_range,
+            sort_by=sort_by,
+            order=order,
+            now_playing=only_in_theater
+        )
+    except requests.HTTPError as exc:
+        return jsonify({"error": "TMDb request failed", "detail": str(exc)}), 502
+
+    return jsonify(payload["results"])

@@ -1,5 +1,79 @@
+from datetime import date, timedelta
+
 from routes.Config import TMDB_api, genre_dict, genre_dict_rev
 import requests
+
+def discover_movies(
+    page: int = 1,
+    *,
+    genres: list[str] | None = None,
+    language: str | None = None,
+    year_range: tuple[int, int] | None = None,
+    release_date_range: tuple[str, str] | None = None,
+    sort_by: str = "popularity",
+    order: str = "desc",
+    now_playing: bool = False,
+):
+    base_url = "https://api.themoviedb.org/3/discover/movie"
+
+    params: dict[str, str | int | bool] = {
+        "api_key": TMDB_api,
+        "include_adult": False,
+        "include_video": False,
+        "language": "en-US",
+        "page": page,
+        "sort_by": f"{sort_by}.{order}",
+        "with_genres_operator": "or",
+    }
+
+    # --- Genres -----------------------------------------------------------
+    if genres:
+        genre_ids = [str(genre_dict_rev[g.strip()]) for g in genres if g.strip() in genre_dict_rev]
+        if genre_ids:
+            params["with_genres"] = ",".join(genre_ids)
+
+    # --- Language ---------------------------------------------------------
+    if language:
+        params["with_original_language"] = language
+
+    # --- Year range (maps to primary_release_date.<gte|lte>) --------------
+    if year_range:
+        min_year, max_year = year_range
+        params["primary_release_date.gte"] = f"{min_year}-01-01"
+        params["primary_release_date.lte"] = f"{max_year}-12-31"
+
+    # --- Explicit release‑date range -------------------------------------
+    if release_date_range:
+        gte, lte = release_date_range
+        params["release_date.gte"] = gte
+        params["release_date.lte"] = lte
+
+    # --- "Now Playing" helper -------------------------------------------
+    if now_playing:
+        params["with_release_type"] = "2|3"  # Theatrical | Theatrical (limited)
+        if "release_date.gte" not in params and "release_date.lte" not in params:
+            today = date.today()
+            params["release_date.lte"] = today.isoformat()
+            params["release_date.gte"] = (today - timedelta(days=30)).isoformat()
+
+    # --- Request ----------------------------------------------------------
+    response = requests.get(base_url, params=params, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+
+    # --- Post‑process genre IDs -> names ----------------------------------
+    processed_results = []
+    for movie in data.get("results", []):
+        movie_genres = [genre_dict.get(gid, "Unknown") for gid in movie.get("genre_ids", [])]
+        movie["genres"] = "-".join(movie_genres) if movie_genres else "Unknown"
+        processed_results.append(movie)
+
+    return {
+        "page": data.get("page", 1),
+        "total_pages": data.get("total_pages", 1),
+        "total_results": data.get("total_results", len(processed_results)),
+        "results": processed_results,
+    }
 
 def get_filtered_now_playing(page, genres, language, release_year, per_page=12):
     """
