@@ -1,3 +1,4 @@
+import requests
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 
@@ -6,6 +7,8 @@ from model import Session, SessionParticipant, MoviePocket, Movie
 from sqlalchemy.sql import func
 import random
 import hashlib
+
+from routes.Config import TMDB_api
 
 session_bp = Blueprint('session', __name__)
 
@@ -343,48 +346,65 @@ def final_movie():
     data = request.json
     session_id = data.get('session_id')
 
-    # Determine the highest vote count in the session
-    max_votes = db.session.query(func.max(MoviePocket.votes)).filter(MoviePocket.session_id == session_id).scalar()
+    max_votes = (db.session
+                 .query(func.max(MoviePocket.votes))
+                 .filter(MoviePocket.session_id == session_id)
+                 .scalar())
     if max_votes is None:
         return jsonify({'message': 'No movie selected'}), 404
 
-    # Retrieve all movies with the top vote count
-    top_movies = MoviePocket.query.filter_by(session_id=session_id, votes=max_votes).all()
+    top_movies = (MoviePocket.query
+                  .filter_by(session_id=session_id, votes=max_votes)
+                  .all())
 
-    # Sort the movies list by a stable attribute
-    top_movies = sorted(top_movies, key=lambda x: x.movie_id)
-
-    # Generate a hash, so the random tie breaker is deterministic across diff clients
+    top_movies = sorted(top_movies, key=lambda p: p.movie_id)
     hash_value = int(hashlib.md5(session_id.encode()).hexdigest(), 16)
     winning_movie = top_movies[hash_value % len(top_movies)]
 
-    # Build movies_list using the full movie details
-    all_movies = MoviePocket.query.filter_by(session_id=session_id).all()
-    movies_list = []
-    for pocket in all_movies:
-        movie_obj = Movie.query.filter_by(id=pocket.movie_id).first()
-        if movie_obj:
-            movie_data = {
-                'id': movie_obj.id,
-                'title': movie_obj.title,
-                'genres': movie_obj.genres,
-                'original_language': movie_obj.original_language,
-                'overview': movie_obj.overview,
-                'popularity': movie_obj.popularity,
-                'release_date': movie_obj.release_date.isoformat() if movie_obj.release_date else None,
-                'poster_path': movie_obj.poster_path
-            }
-        else:
-            movie_data = {'id': pocket.movie_id}  # Fallback if movie not found
-        movies_list.append({
-            'movie': movie_data,
-            'votes': pocket.votes
-        })
+    all_pockets = MoviePocket.query.filter_by(session_id=session_id).all()
+    vote_map = {p.movie_id: p.votes for p in all_pockets}
 
-    # Emit the winning movie to session participants
-    socketio.emit('final_movie_result',
-                  {'session_id': session_id, 'movie_id': winning_movie.movie_id, 'votes': winning_movie.votes},
-                  room=f'session_{session_id}')
+    movies_list = []
+    for movie_id, votes in vote_map.items():
+        tmdb_url = f"https://api.themoviedb.org/3/movie/{movie_id}"
+        params = {
+            'api_key': TMDB_api,
+            'language': 'en-US'
+        }
+
+        try:
+            response = requests.get(tmdb_url, params=params, timeout=5)
+            response.raise_for_status()
+            movie = response.json()
+
+            genre_names = [g['name'] for g in movie.get('genres', [])]
+            genres_str = '-'.join(genre_names) if genre_names else 'Unknown'
+
+            movie_data = {
+                'id': movie.get('id'),
+                'title': movie.get('title'),
+                'genres': genres_str,
+                'original_language': movie.get('original_language'),
+                'overview': movie.get('overview'),
+                'popularity': movie.get('popularity'),
+                'release_date': movie.get('release_date'),
+                'poster_path': movie.get('poster_path')
+            }
+        except requests.RequestException as exc:
+            movie_data = {'id': movie_id}
+            print(f"Error fetching movie details: {exc}")
+
+        movies_list.append({'movie': movie_data, 'votes': votes})
+
+    socketio.emit(
+        'final_movie_result',
+        {
+            'session_id': session_id,
+            'movie_id': winning_movie.movie_id,
+            'votes': winning_movie.votes
+        },
+        room=f'session_{session_id}'
+    )
 
     return jsonify({
         'movie_id': winning_movie.movie_id,
