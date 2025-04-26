@@ -1,8 +1,21 @@
 from datetime import date, timedelta
-
 from routes.Config import TMDB_api, genre_dict, genre_dict_rev
 import requests
 
+'''
+    Utils.py
+    
+    This file provides utility functions for interacting with the TMDb API.
+    It handles:
+    - Discovering movies with flexible filters (genres, language, release year, release date range)
+    - Fetching and filtering now-playing movies with custom criteria
+    - Fetching and formatting movies from TMDb Discover API for display
+    It also processes genre IDs into human-readable genre names for movie results.
+'''
+
+#
+# Discover movies using TMDb Discover API with flexible filters (genres, language, year range, release date)
+#
 def discover_movies(
     page: int = 1,
     *,
@@ -74,7 +87,9 @@ def discover_movies(
         "total_results": data.get("total_results", len(processed_results)),
         "results": processed_results,
     }
-
+#
+# Fetch and filter now-playing movies from TMDb API based on genres, language, and release year
+#
 def get_filtered_now_playing(page, genres, language, release_year, per_page=12):
     """
     Fetch now-playing movies from TMDb, apply additional filters (genres, language, release_year),
@@ -131,8 +146,9 @@ def get_filtered_now_playing(page, genres, language, release_year, per_page=12):
     start_index = (page - 1) * per_page
     end_index = start_index + per_page
     return filtered_results[start_index:end_index]
-
-
+#
+# Fetch and filter movies from TMDb Discover API and format their genre information
+#
 def get_filtered(page, genres, language, release_year, sort_by='popularity', order='desc', per_page=12):
     """
     Fetch movies from TMDb Discover API and map genres back to names.

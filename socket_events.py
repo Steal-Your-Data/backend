@@ -3,7 +3,17 @@ from flask_socketio import join_room,leave_room
 from extentions import socketio  # Import the initialized socketio instance
 from model import SessionParticipant
 
+'''
+    socket_events.py
+    
+    This file defines the Socket.IO event handlers for real-time communication during movie selection sessions.
+    It handles:
+    - Users joining a session room
+    - Users leaving a session room
+    - Broadcasting join and leave events to all participants in a session
+'''
 
+# Handle a user joining a session room and broadcast the updated participant list
 @socketio.on('join_session_room')
 def handle_join_session_room(data):
     session_id = data.get("session_id")
@@ -24,6 +34,7 @@ def handle_join_session_room(data):
                       room=f"session_{session_id}")
 
 
+# Handle a user leaving a session room and notify all remaining participants
 @socketio.on('leave_session_room')
 def handle_leave_session_room(data):
     session_id = data.get("session_id")

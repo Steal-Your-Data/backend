@@ -3,6 +3,17 @@ from sqlalchemy.dialects.sqlite import TEXT
 import uuid
 import random
 
+'''
+    model.py
+    
+    This file defines the SQLAlchemy models for the application database, including:
+    - Movie: Stores information about individual movies
+    - Session: Represents a movie selection session with a host and status
+    - SessionParticipant: Tracks participants in a session and their progress
+    - MoviePocket: Temporary storage for selected movies and their votes during a session
+'''
+
+
 class Movie(db.Model):
     __tablename__ = 'movies'  # Ensure the table name matches your CSV import
     id = db.Column(db.Integer, primary_key=True)

@@ -1,6 +1,15 @@
 import os
-
+'''
+     Config.py
+     This file contains configuration settings and mappings for the movie app, including:
+     - TMDB API key retrieval
+     - Genre ID to name mappings (genre_dict)
+     - Genre name to ID mappings (genre_dict_rev)
+'''
+# Retrieve TMDB API key from environment variable, with a default fallback key
 TMDB_api = os.environ.get('TMDB_KEY', '454688fc07a43e24f8dd4952f05c413f')
+
+# Mapping from TMDB genre IDs to genre names
 genre_dict = {
     28: "Action",
     12: "Adventure",
@@ -22,7 +31,7 @@ genre_dict = {
     10752: "War",
     37: "Western"
 }
-
+# Reverse mapping from genre names back to TMDB genre IDs
 genre_dict_rev = {
     "Action": 28,
     "Adventure": 12,

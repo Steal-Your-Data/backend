@@ -1,7 +1,25 @@
-# Movie Swipe App
+# CINEMATCH Backend
+
+## Table of Contents
+- [Introduction](#introduction)
+- [Setup Instructions](#setup-instructions)
+- [Backend Architecture Overview](#backend-architecture-overview)
+- [High Level Workflow Diagram for Session_routes.py](#high-level-workflow-diagram-for-session_routespy)
+- [Database Tables for Session Management](#database-tables-for-session-management)
+- [Potential Modification of the Database](#potential-modification-of-the-database)
+- [Updates](#updates)
+- [Contribution Guidelines](#contribution-guidelines)
+- [License](#license)
+- [Contact](#contact)
 
 ## Introduction
-This is the final project for CS506. The app allows friends to **(`start a session/join a group`)** and use a Tinder-like swiping mechanism to vote for which movie to watch together. The goal is to make movie selection fun, interactive, and democratic among friends. ~~movies.db being used is put in the **google drive CS506** (`Project/Setup tables in Database/movies.db`)~~, ~~also since the **session_route_html_test is too large to push**, put in CS506 (`Project/session_route_html_test`)~~ , a new compiled version of all the html functionalities for testing use the name is called **(`complete_version_html_testing.html`)**, a new structured database will be in **google drive CS506** **(`Project/Setup tables in Database/UPDATED DATABASE/movies_v2.db`)**
+
+This project, developed for CS506, is a group movie selection platform called **Cinematch**. It allows friends to **start a session or join a group** and collaboratively choose a movie through a Tinder-like swiping and voting system. The app aims to make movie picking fun, interactive, and democratic among friends.
+
+Movie data is retrieved live from the TMDb API, while session-related information (such as participant lists and voting progress) is managed through a structured local database (`movies_v2.db`). For frontend testing purposes, a compiled HTML file (`complete_version_html_testing.html`) and the updated database are available in the project’s Google Drive.
+
+Unit tests for API endpoints can be run using **pytest** directly from the terminal. Although there may be minor adjustments at the end that cause some test cases to fail, most APIs are internal and protected from invalid user inputs, ensuring stable backend behavior in typical usage scenarios.
+
 
 ## Version Control
 - Python Version: Conda 3.10.0
@@ -29,9 +47,78 @@ This is the final project for CS506. The app allows friends to **(`start a sessi
    python app.py
    ```
 
-## High Level Workflow Diagram
+## Backend Architecture Overview
+
+The backend of **Cinematch** is built with **Flask** and organized into modular blueprints for scalability and clarity. We use **Flask-SQLAlchemy** to manage session-related data and **Flask-SocketIO** to enable real-time communication during movie selection sessions. The system is divided into key modules: `session_routes.py` manages user sessions (starting, joining, voting), `movie_routes.py` handles movie search and filtering (primarily via live TMDb API calls), `socket_events.py` handles real-time room-based updates, and `Utils.py` provides helper functions for external API queries. While most movie information is fetched directly from TMDb, session-related data — such as session details, participants, and temporary movie pockets for voting — continues to be stored and retrieved from the local SQLite database (`movies_v2.db`).
+
+Our backend is designed for an interactive, scalable, and fault-tolerant user experience. APIs are paginated for efficient data handling, Socket.IO ensures synchronized updates across participants, and the database maintains essential session state information. This architecture offers a dynamic, real-time movie-matching experience while balancing external API responsiveness with local session persistence.
+
+## High Level Workflow Diagram for Session_routes.py
 ![Alt text](WorkFlow_Chart.jpeg)
 
+### How Session Management Works
+
+The above diagram illustrates the full lifecycle of a movie selection session in **Cinematch**, as managed by `session_routes.py` and `socket_events.py`.
+
+1. **Session Initialization**: A host begins by starting a session using `/start`, while guests join using `/join`. All participants are then added to a Socket.IO room for real-time communication (`join_session_room` event).
+
+2. **Session Start**: When the host begins the session with `/begin`, a Socket.IO broadcast notifies all users that movie selection can begin.
+
+3. **Movie Selection Phase**: All users can add movies to the session using `/add_movie`. Once a user finishes their selection, they call `/finish_selection`. When all participants finish, a broadcast notifies everyone that voting is next.
+
+4. **Swiping & Voting Phase**: Users enter the Tinder-like swiping interface. Votes are submitted via `/vote`, and each participant calls `/finish_voting` when done. When everyone finishes voting, the backend tallies the result.
+
+5. **Final Decision Broadcast**: The winning movie is computed and retrieved through `/final_movie`, and a broadcast shares the decision with the group.
+
+This real-time workflow combines RESTful APIs with WebSocket events to ensure a smooth, interactive, and collaborative movie-picking experience.
+
+
+
+## Database Tables for Session Management
+
+The `movies_v2.db` database still plays an important role in **session management**. The following tables are actively used by the backend:
+
+- **Session**: Stores information about each movie selection session, including session ID and host user.
+- **SessionParticipant**: Tracks participants who have joined a session, along with their selection and voting status.
+- **MoviePocket**: Temporarily stores selected movies for a session along with their vote counts, allowing collaborative voting.
+
+These tables are primarily accessed and modified through APIs defined in `session_routes.py`. They ensure that session states, participant data, and voting results are consistently managed across user interactions.
+
+---
+
+### Table Structures
+#### 1. Session Table (`session`)
+
+| Column Name | Type    | Description                                         |
+|-------------|---------|-----------------------------------------------------|
+| id          | TEXT    | Primary Key (Random 6-digit session ID as string)    |
+| host_name   | TEXT    | Host username or user ID                            |
+| status      | TEXT    | Status of the session (e.g., pending, active, completed) |
+
+---
+
+#### 2. SessionParticipant Table (`session_participant`)
+
+| Column Name         | Type    | Description                                   |
+|---------------------|---------|-----------------------------------------------|
+| id                  | INTEGER | Primary Key (Auto-increment)                  |
+| session_id          | TEXT    | Foreign Key linked to `session.id`            |
+| name                | TEXT    | Name of the participant                      |
+| done_selecting      | BOOLEAN | Whether the participant has finished selecting movies |
+| done_voting         | BOOLEAN | Whether the participant has finished voting  |
+
+---
+
+#### 3. MoviePocket Table (`movie_pocket`)
+
+| Column Name       | Type    | Description                                               |
+|-------------------|---------|-----------------------------------------------------------|
+| id                | INTEGER | Primary Key (Auto-increment)                              |
+| session_id        | TEXT    | Foreign Key linked to `session.id`                        |
+| movie_id          | INTEGER | Foreign Key linked to `movies.id` (nullable if external movie) |
+| votes             | INTEGER | Number of votes the movie has received in this session     |
+
+---
 
 ## Potential Modification of the Database
 ---
@@ -87,6 +174,8 @@ CREATE TABLE movie_pocket (
 ```
 
 And also You might change the add_movies API in session_routes.py accordingly
+
+## Updates
 
 ## Updates 3/2/2025
 

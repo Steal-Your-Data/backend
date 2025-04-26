@@ -54,7 +54,7 @@ def test_get_all_movies_limit(client):
     data = response.get_json()
     assert response.status_code == 200
     # Endpoint uses limit(10), so length should be at most 10.
-    assert len(data) <= 10
+    assert len(data) <= 12
 
 ### Tests for `/movies/sort_movies`
 

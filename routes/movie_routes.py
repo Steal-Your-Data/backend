@@ -1,16 +1,34 @@
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
-
 from model import Movie
 from extentions import db
 from sqlalchemy import extract
 from routes.Config import TMDB_api,genre_dict
 import requests
 from routes.Utils import get_filtered_now_playing, get_filtered, discover_movies
-
 movie_bp = Blueprint('movies', __name__)
 
+'''
+    movie_routes.py
+    
+    This file defines the Flask Blueprint routes for managing movie-related operations.
+    It handles:
+    - Searching for movies in the local database and via TMDb API
+    - Retrieving detailed movie information by ID
+    - Listing movies with pagination support
+    - Sorting and filtering movies based on various attributes
+    - Combining filtering and sorting operations
+    Utility functions and external TMDb API are used to enrich movie data retrieval.
+'''
+
+#
+# ------------------------------- Movie Search Routes --------------------------------
+# Provides endpoints for searching movies either from the local database or TMDb API.
+#
 '''--------------------------------------Movie Search-----------------------------------------------------'''
+#
+# Search movies in the local database (up to 10 matches)
+#
 @movie_bp.route('/search', methods=['GET'])
 @cross_origin()
 def search_movies():
@@ -33,7 +51,9 @@ def search_movies():
         })
     return jsonify(result)
 
-'''Not search the local database now, but just do search from the API'''
+#
+# Search movies using TMDb external API (supports pagination)
+#
 @movie_bp.route('/search_API', methods=['GET'])
 def search_movies_API():
     query = request.args.get('query', '').strip()
@@ -85,7 +105,9 @@ def search_movies_API():
 '''-------------------------------------------------------------Get_info_id-------------------------------------------'''
 
 
-'''Now not get the movie information from local database but from the OPEN API'''
+#
+# Get detailed movie information by movie ID from TMDb API
+#
 @movie_bp.route('/get_movie_info_by_id_API', methods=['GET'])
 def get_info_by_id_API():
     movie_id = request.args.get('id')
@@ -123,9 +145,9 @@ def get_info_by_id_API():
     except requests.RequestException as e:
         return jsonify({'error': str(e)}), 500
 
-'''------------------------------------------------------Get ALL MOVIES----------------------------------'''
-
-
+#
+# Get a limited set of movies (15) from the local database
+#
 @movie_bp.route('/get_all_movies', methods=['GET'])
 @cross_origin()
 def get_all_movies():
@@ -146,7 +168,9 @@ def get_all_movies():
 
     return jsonify(result)
 
-'''Get_all_movies by only loading 10 movies each time not a whole'''
+#
+# Get movies from the local database with pagination (12 per page)
+#
 @movie_bp.route('/get_all_movies_V2', methods=['GET'])
 def get_all_movies_V2():
     try:
@@ -178,8 +202,9 @@ def get_all_movies_V2():
 
     return jsonify(result)
 
-'''Get all movies by API'''
-# def get_all_movies_API():
+#
+# Get popular movies from TMDb API with pagination (up to 12 results)
+#
 @movie_bp.route('/get_all_movies_API', methods=['GET'])
 def get_all_movies_API():
     page = request.args.get('page', 1, type=int)
@@ -222,6 +247,9 @@ def get_all_movies_API():
 
 
 '''--------------------------------------------sort movies------------------------------------'''
+#
+# Sort all local movies by a specified field (popularity, release date, or title)
+#
 @movie_bp.route('/sort_movies', methods=['GET'])
 @cross_origin()
 def sort_movies():
@@ -260,7 +288,9 @@ def sort_movies():
     
     return jsonify(result)
 
-'''Same as befoe each time only return specific 10 movies in this page'''
+#
+# Sort local movies with pagination (12 movies per page)
+#
 @movie_bp.route('/sort_movies_V2', methods=['GET'])
 def sort_movies_V2():
     sort_by = request.args.get('sort_by', 'title')  # Default to sorting by title
@@ -309,7 +339,9 @@ def sort_movies_V2():
 
 
 '''-----------------------------------------------filter_movies----------------------------------------'''
-
+#
+# Filter local movies by genres, language, and release year
+#
 @movie_bp.route('/filter_movies', methods=['GET'])
 @cross_origin()
 def filter_movies():
@@ -353,79 +385,9 @@ def filter_movies():
     return jsonify(result)
 
 
-# @movie_bp.route('/get_movie_info_by_ids', methods=['GET'])
-# def get_info_ids():
-#     data = request.json
-#     if data is None:
-#         return jsonify({'error': 'Missing movie id JSON'}), 400
 #
-#     if 'ids' not in data:
-#         return jsonify({'error': 'Missing "ids" key in JSON'}), 400
+# Get multiple movie details from the local database by their IDs (POST request)
 #
-#
-#     movie_ids = data.get('ids')
-#
-#     if not movie_ids:
-#         return jsonify({'error': 'No movie ids provided'}), 400
-#     if len(movie_ids) == 0:
-#         return jsonify({'error': 'The movie ids list is empty'}), 200
-#
-#     results = []
-#     for movie_id in movie_ids:
-#         movie = Movie.query.filter_by(id=movie_id).first()
-#         if movie:
-#             result = {
-#                 'id': movie.id,
-#                 'title': movie.title,
-#                 'genres': movie.genres,
-#                 'original_language': movie.original_language,
-#                 'overview': movie.overview,
-#                 'popularity': movie.popularity,
-#                 'release_date': movie.release_date.isoformat() if movie.release_date else None,
-#                 'poster_path': movie.poster_path
-#             }
-#             results.append(result)
-#     if not results:
-#         # Option 1: return an empty list (status 200)
-#         # return jsonify([]), 200
-#
-#         # Option 2: return an error if none were found
-#         return jsonify({'error': 'No movies found for provided ids'}), 404
-#
-#     return jsonify(results)
-# @movie_bp.route('/get_movie_info_by_ids', methods=['GET'])
-# def get_info_ids():
-#     data = request.json(silent=True,force=True)
-#     if data is None:
-#         return jsonify({'error': 'Missing movie id json'}), 400
-#
-#     if 'ids' not in data:
-#         return jsonify({'error': 'Missing "ids" key in JSON'}), 400
-#
-#     movie_ids = data.get('ids')
-#     # If the list is empty, return an empty list with status 200
-#     if movie_ids == []:
-#         return jsonify([]), 200
-#
-#     results = []
-#     for movie_id in movie_ids:
-#         movie = Movie.query.filter_by(id=movie_id).first()
-#         # Only add movie info if the movie exists.
-#         if movie is not None:
-#             result = {
-#                 'id': movie.id,
-#                 'title': movie.title,
-#                 'genres': movie.genres,
-#                 'original_language': movie.original_language,
-#                 'overview': movie.overview,
-#                 'popularity': movie.popularity,
-#                 'release_date': movie.release_date.isoformat() if movie.release_date else None,
-#                 'poster_path': movie.poster_path
-#             }
-#             results.append(result)
-#     return jsonify(results)
-
-
 @movie_bp.route('/get_movie_info_by_ids', methods=['POST'])
 @cross_origin()
 def get_info_ids():
@@ -459,7 +421,9 @@ def get_info_ids():
 
     return jsonify(results)
 
-'''get movie informations from API instead of local database'''
+#
+# Get multiple movie details from TMDb API by their IDs (POST request)
+#
 @movie_bp.route('/get_movie_info_by_ids_API', methods=['POST'])
 def get_info_ids_API():
 
@@ -508,7 +472,9 @@ def get_info_ids_API():
 
     return jsonify(results)
 
-
+#
+# Filter local or now-playing movies with pagination and genre/language/year filters
+#
 @movie_bp.route('/filter_movies_V2', methods=['GET'])
 def filter_movies_V2():
     genres = request.args.getlist('genres')  # Expect a list of genres
@@ -578,7 +544,9 @@ def filter_movies_V2():
 
     return jsonify(result)
 
-
+#
+# Filter and sort movies, either from the https://api.themoviedb.org/3/discover/movie or https://api.themoviedb.org/3/movie/now_playing from TMDb
+#
 @movie_bp.route('/filter_and_sort', methods=['GET'])
 def filter_and_sort():
     genres = request.args.getlist('genres')  # Expect a list of genres
@@ -628,6 +596,9 @@ def filter_and_sort():
     filtered_movies = get_filtered(page, genres, language, release_year, sort_by, order, per_page=12)
     return jsonify(filtered_movies)
 
+#
+# Advanced filter and sort from TMDb API with support for release year range
+#
 @movie_bp.route("/filter_and_sort_V2", methods=["GET"])
 def filter_and_sort_V2():
     # ------------------------------------------------------------------ query params

@@ -1,14 +1,25 @@
 import requests
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
-
 from extentions import db, socketio
 from model import Session, SessionParticipant, MoviePocket, Movie
 from sqlalchemy.sql import func
 import random
 import hashlib
-
 from routes.Config import TMDB_api
+
+'''
+    session_routes.py
+    
+    This file defines the Flask Blueprint routes for managing movie selection sessions.
+    It handles:
+    - Starting, joining, and leaving a session
+    - Managing session participants
+    - Adding and listing movies within a session
+    - Facilitating the movie selection and voting phases
+    - Determining the final winning movie based on votes
+    Socket.IO is used for real-time updates to session participants.
+'''
 
 session_bp = Blueprint('session', __name__)
 
@@ -19,7 +30,9 @@ def generate_unique_session_id():
         if not existing_session:
             return new_id  # Return only if it's unique
 
-# Start a New Session and Invite Friends
+#
+# Start a new movie session and invite the host as the first participant
+#
 @session_bp.route('/start', methods=['POST'])
 @cross_origin()
 def start_session():
@@ -44,6 +57,9 @@ def start_session():
     return jsonify({'message': 'Session started', 'session_id': new_session.id, 'participant_id': host_participant.id})
 
 
+#
+# Join an existing session if it has not started or completed
+#
 @session_bp.route('/join', methods=['POST'])
 @cross_origin()
 def join_session():
@@ -73,6 +89,9 @@ def join_session():
         return jsonify({'message': 'Join session successfully', 'participant_ID': new_session_participant.id, 'host_name': session.host_name})
 
 
+#
+# Start the movie selection phase of the session
+#
 @session_bp.route('/begin', methods=['POST'])
 @cross_origin()
 def Begin():
@@ -89,6 +108,9 @@ def Begin():
     socketio.emit('session_begin', {'session_id': session_id}, room=f'session_{session_id}')
     return jsonify({'message': f'session {session_id} start'})
 
+#
+# Leave the session; if the host leaves, the session is disbanded
+#
 @session_bp.route('/leave', methods=['POST'])
 @cross_origin()
 def leave_session():
@@ -123,6 +145,9 @@ def leave_session():
         socketio.emit('participant_left', {'session_id': session_id, 'participant_id': participant_id, 'participant_name': participant.name}, room=f'session_{session_id}')
         return jsonify({'message': 'You have left the session'})
 
+#
+# List all participants in a given session
+#
 @session_bp.route('/list_join_participants', methods=['GET'])
 @cross_origin()
 def list_participants():
@@ -139,6 +164,9 @@ def list_participants():
     return jsonify({'session_id': session_id, 'participants_name': participants_name})
 
 
+#
+# Add movies to the session's movie pocket
+#
 @session_bp.route('/add_movie', methods=['POST'])
 @cross_origin()
 def add_movie():
@@ -171,6 +199,9 @@ def add_movie():
     return jsonify({'message': 'Movies added to pocket'})
 
 
+#
+# Mark a participant as finished selecting movies and check if all are done
+#
 @session_bp.route('/finish_selection', methods=['POST'])
 @cross_origin()
 def finish_selection():
@@ -231,6 +262,9 @@ def finish_selection():
     })
 
 
+#
+# List all unique movies currently in the session's movie pocket
+#
 @session_bp.route('/movies_in_pocket', methods=['POST'])
 @cross_origin()
 def movies_in_pocket():
@@ -260,6 +294,9 @@ def movies_in_pocket():
     return jsonify({'session_id': session_id, 'movies': movie_list})
 
 
+#
+# Vote for a movie in the session's movie pocket
+#
 @session_bp.route('/vote', methods=['POST'])
 @cross_origin()
 def vote():
@@ -289,6 +326,9 @@ def vote():
     return jsonify({'message': 'Vote recorded'})
 
 
+#
+# Mark a participant as finished voting and check if all are done
+#
 @session_bp.route('/finish_voting', methods=['POST'])
 @cross_origin()
 def finish_voting():
@@ -339,7 +379,9 @@ def finish_voting():
         'done_participants': done_participants
     })
 
-# Retrieve the Final (Winning) Movie for the Session
+#
+# Determine the final winning movie based on votes
+#
 @session_bp.route('/final_movie', methods=['POST'])
 @cross_origin()
 def final_movie():
