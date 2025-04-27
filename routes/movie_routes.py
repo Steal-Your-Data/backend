@@ -6,6 +6,7 @@ from sqlalchemy import extract
 from routes.Config import TMDB_api,genre_dict
 import requests
 from routes.Utils import get_filtered_now_playing, get_filtered, discover_movies
+from datetime import date
 movie_bp = Blueprint('movies', __name__)
 
 '''
@@ -77,8 +78,19 @@ def search_movies_API():
         data    = response.json()
         movies  = data.get('results', [])
 
+        today = date.today()
+
         result = []
         for movie in movies:    # ← no artificial 10‑item cap
+            release_date_str = movie.get('release_date')
+            if not release_date_str:
+                continue  # Skip movies without a release date
+            try:
+                release_date = date.fromisoformat(release_date_str)
+                if release_date > today:
+                    continue  # Skip future release movies
+            except ValueError:
+                continue  # Skip movies with malformed release date
             genre_names = [
                 genre_dict.get(gid, "Unknown")
                 for gid in movie.get('genre_ids', [])
