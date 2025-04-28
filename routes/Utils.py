@@ -43,7 +43,7 @@ def discover_movies(
     if genres:
         genre_ids = [str(genre_dict_rev[g.strip()]) for g in genres if g.strip() in genre_dict_rev]
         if genre_ids:
-            params["with_genres"] = ",".join(genre_ids)
+            params["with_genres"] = "|".join(genre_ids)
 
     # --- Language ---------------------------------------------------------
     if language:
