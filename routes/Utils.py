@@ -36,7 +36,7 @@ def discover_movies(
         "language": "en-US",
         "page": page,
         "sort_by": f"{sort_by}.{order}",
-        "with_genres_operator": "or",
+        "with_release_type": "1|4|5|6",
     }
 
     # --- Genres -----------------------------------------------------------
