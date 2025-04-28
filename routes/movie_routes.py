@@ -614,7 +614,7 @@ def filter_and_sort():
 @movie_bp.route("/filter_and_sort_V2", methods=["GET"])
 def filter_and_sort_V2():
     # ------------------------------------------------------------------ query params
-    genres = request.args.getlist("genres")
+    genres = request.args.get("genres")
     language = request.args.get("language")
     only_in_theater = request.args.get("only_in_theater") == "yes"
 
@@ -653,7 +653,7 @@ def filter_and_sort_V2():
     try:
         payload = discover_movies(
             page=page,
-            genres=genres,
+            genres=genres.split("|") if genres else None,
             language=language,
             year_range=year_range,
             sort_by=sort_by,

@@ -158,7 +158,7 @@ def get_filtered(page, genres, language, release_year, sort_by='popularity', ord
     # Build request parameters
     params = {
         'api_key': TMDB_api,
-        'with_genres': ','.join(genre_ids),
+        'with_genres': '|'.join(genre_ids),
         'with_genres_operator': 'or',
         'sort_by': f"{sort_by}.{order}",
         'page': page
