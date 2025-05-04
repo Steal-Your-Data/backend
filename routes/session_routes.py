@@ -85,6 +85,12 @@ def join_session():
     elif start == 'completed':
         return jsonify({'error': 'Session has already finished, no way for joining'})
     else:
+
+        existing_names = [p.name for p in SessionParticipant.query.filter_by(session_id=session_id).all()]
+        if join_name in existing_names:
+            socketio.emit('name_exists', {'session_id': session_id, 'name': join_name}, room=f'session_{session_id}')
+            return jsonify({'error': 'This name is already taken. Please choose another one.'}), 400
+
         new_session_participant = SessionParticipant(session_id=session_id, name=join_name)
         db.session.add(new_session_participant)
         db.session.commit()
