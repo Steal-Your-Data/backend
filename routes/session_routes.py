@@ -1,6 +1,10 @@
+from collections import defaultdict
+
 import requests
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
+from flask_socketio import leave_room
+
 from extentions import db, socketio
 from model import Session, SessionParticipant, MoviePocket, Movie
 from sqlalchemy.sql import func
@@ -113,37 +117,16 @@ def Begin():
 #
 @session_bp.route('/leave', methods=['POST'])
 @cross_origin()
-def leave_session():
+def leave_session_http():
     data = request.json
-    session_id = data.get('session_id')
+    session_id     = data.get('session_id')
     participant_id = data.get('participant_id')
 
     if not session_id or not participant_id:
         return jsonify({'error': 'Missing session_id or participant_id'}), 400
 
-    session = Session.query.filter_by(id=session_id).first()
-    if not session:
-        return jsonify({'error': 'Session does not exist'}), 404
-
-    participant = SessionParticipant.query.filter_by(id=participant_id, session_id=session_id).first()
-    if not participant:
-        return jsonify({'error': 'Participant not found in this session'}), 404
-
-    if participant.name == session.host_name:
-
-        socketio.emit('session_disbanded', {'session_id': session_id, 'host_name': session.host_name}, room=f'session_{session_id}')
-
-        SessionParticipant.query.filter_by(session_id=session_id).delete()
-
-        db.session.delete(session)
-        db.session.commit()
-        return jsonify({'message': 'Session disbanded by host'})
-    else:
-        db.session.delete(participant)
-        db.session.commit()
-
-        socketio.emit('participant_left', {'session_id': session_id, 'participant_id': participant_id, 'participant_name': participant.name}, room=f'session_{session_id}')
-        return jsonify({'message': 'You have left the session'})
+    status, payload = remove_participant(session_id, participant_id)   # ← no sid
+    return jsonify(payload), status
 
 #
 # List all participants in a given session
@@ -404,7 +387,10 @@ def final_movie():
     winning_movie = top_movies[hash_value % len(top_movies)]
 
     all_pockets = MoviePocket.query.filter_by(session_id=session_id).all()
-    vote_map = {p.movie_id: p.votes for p in all_pockets}
+    vote_map = defaultdict(int)
+    for p in all_pockets:
+        print(str(p.votes))
+        vote_map[p.movie_id] += p.votes
 
     movies_list = []
     for movie_id, votes in vote_map.items():
@@ -455,3 +441,94 @@ def final_movie():
     })
 
 
+
+def remove_participant(session_id: str, participant_id: int, *, sid: str | None = None
+                       ) -> tuple[int, dict]:
+    # ── 1. Look-ups ───────────────────────────────────────────────────────────
+    session = Session.query.get(session_id)
+    if not session:
+        return 404, {'error': 'Session does not exist'}
+
+    participant = SessionParticipant.query.filter_by(
+        id=participant_id, session_id=session_id
+    ).first()
+    if not participant:
+        return 404, {'error': 'Participant not found in this session'}
+
+    # Keep track if we’re removing today’s host
+    is_current_host = (participant.name == session.host_name)
+
+    # ── 2. Remove the user ────────────────────────────────────────────────────
+    db.session.delete(participant)
+    db.session.commit()          # commit early – the row is gone
+
+    # Pop them out of the Socket.IO room if we know their sid
+    if sid:
+        leave_room(f'session_{session_id}', sid=sid)
+
+    # Notify clients that someone left
+    socketio.emit('participant_left',
+                  {'session_id': session_id,
+                   'participant_id': participant_id,
+                   'participant_name': participant.name},
+                  room=f'session_{session_id}')
+
+    # ── 3. Are there still people inside? ─────────────────────────────────────
+    remaining = SessionParticipant.query.filter_by(session_id=session_id).all()
+    if not remaining:                       # nobody → tear the session down
+        db.session.delete(session)
+        db.session.commit()
+        return 200, {'message': 'Last participant left – session removed'}
+
+    # ── 4. Re-assign host if necessary ───────────────────────────────────────
+    if is_current_host:
+        new_host = remaining[0]             # “first” remaining user
+        session.host_name = new_host.name
+        db.session.commit()
+
+        socketio.emit('host_changed',
+                      {'session_id': session_id,
+                       'new_host_id': new_host.id,
+                       'new_host_name': new_host.name},
+                      room=f'session_{session_id}')
+
+    # ── 5. Recalculate selection / voting progress ───────────────────────────
+    total_participants = len(remaining)
+    done_selecting = sum(1 for p in remaining if p.done_selecting)
+    done_voting    = sum(1 for p in remaining if p.done_voting)
+
+    # ---- selection progress --------------------------------------------------
+    socketio.emit('selection_progress',
+                  {'session_id': session_id,
+                   'total_participants': total_participants,
+                   'done_participants': done_selecting},
+                  room=f'session_{session_id}')
+
+    if done_voting == total_participants:
+        socketio.emit('voting_complete',
+                      {'session_id': session_id},
+                      room=f'session_{session_id}')
+        return 200, {'message': 'You have left the session'}
+
+    if done_selecting == total_participants:
+        movies_in_room = MoviePocket.query.filter_by(session_id=session_id).count()
+        if movies_in_room == 0:
+            session.status = 'completed'
+            db.session.commit()
+            socketio.emit('No_Movies',
+                          {'session_id': session_id},
+                          room=f'session_{session_id}')
+        else:
+            socketio.emit('selection_complete',
+                          {'session_id': session_id},
+                          room=f'session_{session_id}')
+
+    # ---- voting progress -----------------------------------------------------
+    socketio.emit('voting_progress',
+                  {'session_id': session_id,
+                   'total_participants': total_participants,
+                   'done_participants': done_voting},
+                  room=f'session_{session_id}')
+
+
+    return 200, {'message': 'You have left the session'}
